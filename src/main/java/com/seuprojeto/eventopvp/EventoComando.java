@@ -137,6 +137,7 @@ public class EventoComando implements CommandExecutor {
 
             String cmdArenaRaw = plugin.getConfig().getString("comandos.arena", "");
 
+            // Carrega os itens do inventário de forma segura
             List<?> itensRaw = plugin.getKitConfig().getList("inventario");
             List<ItemStack> itensKit = new ArrayList<>();
             if (itensRaw != null) {
@@ -144,11 +145,12 @@ public class EventoComando implements CommandExecutor {
                     if (obj instanceof ItemStack) {
                         itensKit.add((ItemStack) obj);
                     } else {
-                        itensKit.add(null);
+                        itensKit.add(null); // Mantém o slot vazio se for nulo
                     }
                 }
             }
 
+            // Carrega os itens da armadura de forma segura
             List<?> armaduraRaw = plugin.getKitConfig().getList("armadura");
             List<ItemStack> armaduraKit = new ArrayList<>();
             if (armaduraRaw != null) {
@@ -169,9 +171,12 @@ public class EventoComando implements CommandExecutor {
 
                     if (!cmdArenaRaw.isEmpty()) Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdArenaRaw.replace("%player%", p.getName()));
 
+                    // Entrega o inventário respeitando os slots originais
                     if (!itensKit.isEmpty()) {
                         p.getInventory().setContents(itensKit.toArray(new ItemStack[0]));
                     }
+                    
+                    // Entrega as armaduras respeitando os slots originais
                     if (!armaduraKit.isEmpty()) {
                         p.getInventory().setArmorContents(armaduraKit.toArray(new ItemStack[0]));
                     }
@@ -204,9 +209,10 @@ public class EventoComando implements CommandExecutor {
             }
             Player p = (Player) sender;
 
+            // Salva convertendo explicitamente os arrays para Listas normais (evita bugs de tipagem do YAML)
             List<ItemStack> inventarioLista = new ArrayList<>();
             for (ItemStack item : p.getInventory().getContents()) {
-                inventarioLista.add(item);
+                inventarioLista.add(item); // Adiciona mesmo se for null para preservar o slot
             }
 
             List<ItemStack> armaduraLista = new ArrayList<>();
