@@ -1,0 +1,11 @@
+name: EventoPvP
+version: 1.2
+main: com.seuprojeto.eventopvp.EventoPvP
+api-version: '1.21'
+commands:
+  evento:
+    description: Comando principal do evento PvP.
+    permission: evento.player
+  sairevento:
+    description: Sai do evento atual.
+    permission: evento.player

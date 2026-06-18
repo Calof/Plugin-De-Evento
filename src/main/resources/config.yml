@@ -1,0 +1,36 @@
+# ==========================================================
+#                  CONFIGURAÇÃO DO EVENTOPVP (VERSÃO FINAL)
+# ==========================================================
+
+premio: 50000.0
+minimo-jogadores: 2
+# Tempo em segundos que o vencedor fica na arena comemorando antes do teletransporte
+tempo-espera-vencedor: 10
+
+mensagens:
+  sem-permissao: "&cVocê não tem permissão para usar este comando."
+  apenas-jogadores: "&cApenas jogadores podem executar esta ação."
+  evento-fechado: "&cNão há evento aberto."
+  evento-ja-iniciado: "&cO evento já começou, você não pode mais entrar."
+  ja-esta-no-evento: "&cVocê já está no evento."
+  ja-participou: "&cVocê já participou deste evento e não pode entrar novamente."
+  entrou-no-evento: "&aVocê entrou no evento!"
+  saiu-do-evento: "&aVocê saiu do evento."
+  na-lista-de-evento: "&cVocê não está em um evento."
+  eliminado: "&cVocê foi eliminado!"
+  plugin-recarregado: "&aConfiguração do EventoPvP recarregada com sucesso!"
+  jogadores-insuficientes: "&cO evento precisa de pelo menos %min% jogadores para iniciar. Atualmente há apenas %atual%."
+  kit-definido: "&aO kit do evento foi definido com sucesso com os itens do seu inventário!"
+
+broadcasts:
+  evento-aberto: "&aEvento PvP aberto! Digite /evento para participar."
+  batalha-comecou: "&cA batalha começou!"
+  evento-encerrado: "&cEvento encerrado."
+  vencedor: "&6%player% venceu o Evento PvP!"
+
+# Comandos executados pelo console (%player% será substituído pelo nome do jogador)
+comandos:
+  lobby: "warp evento_lobby %player%"
+  arena: "warp evento_arena %player%"
+  spec: "warp evento_spec %player%"
+  dar-premio: "eco give %player% %premio%"
