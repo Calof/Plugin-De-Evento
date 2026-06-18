@@ -82,7 +82,7 @@ public class EventoListeners implements Listener {
                 p.setFireTicks(0);
                 p.getActivePotionEffects().forEach(effect -> p.removePotionEffect(effect.getType()));
 
-                p.warp("Loby");
+                p.warp("Lobby");
 
                 plugin.getJogadoresConfig().set(uuidStr, null);
                 plugin.saveJogadoresConfig();
