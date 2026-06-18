@@ -82,7 +82,8 @@ public class EventoListeners implements Listener {
                 p.setFireTicks(0);
                 p.getActivePotionEffects().forEach(effect -> p.removePotionEffect(effect.getType()));
 
-                p.teleport(locOriginal);
+                String cmdLogin = plugin.getConfig().getString("comandos.login", "").replace("%player%", p.getName());
+                if (!cmdLogin.isEmpty()) Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdLogin);
 
                 plugin.getJogadoresConfig().set(uuidStr, null);
                 plugin.saveJogadoresConfig();
