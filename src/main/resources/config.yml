@@ -30,6 +30,7 @@ broadcasts:
 
 # Comandos executados pelo console (%player% será substituído pelo nome do jogador)
 comandos:
+  Login: "warp Lobby %player%"
   lobby: "warp evento_lobby %player%"
   arena: "warp evento_arena %player%"
   spec: "warp evento_spec %player%"
