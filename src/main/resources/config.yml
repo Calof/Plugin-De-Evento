@@ -1,36 +1,33 @@
 # ==========================================================
-#                  CONFIGURAÇÃO DO EVENTOPVP (VERSÃO FINAL)
+#                  CONFIGURAÇÃO DO EVENTOPVP (PADRONIZADO)
 # ==========================================================
 
-premio: 50000.0
+premio: 0.0
 minimo-jogadores: 2
-# Tempo em segundos que o vencedor fica na arena comemorando antes do teletransporte
-tempo-espera-vencedor: 10
+tempo-espera-vencedor: 15
 
 mensagens:
   sem-permissao: "&cVocê não tem permissão para usar este comando."
   apenas-jogadores: "&cApenas jogadores podem executar esta ação."
-  evento-fechado: "&cNão há evento aberto."
+  evento-fechado: "&cNão há evento aberto no momento."
   evento-ja-iniciado: "&cO evento já começou, você não pode mais entrar."
-  ja-esta-no-evento: "&cVocê já está no evento."
-  ja-participou: "&cVocê já participou deste evento e não pode entrar novamente."
-  entrou-no-evento: "&aVocê entrou no evento!"
-  saiu-do-evento: "&aVocê saiu do evento."
-  na-lista-de-evento: "&cVocê não está em um evento."
-  eliminado: "&cVocê foi eliminado!"
+  ja-esta-no-evento: "&cVocê já está participando do evento."
+  ja-participou: "&cVocê já usou sua chance nesta edição do evento e não pode reentrar."
+  entrou-no-evento: "&aVocê entrou no evento com sucesso! Lembre-se: você pode digitar &e/evento sair &aa qualquer momento para desistir."
+  saiu-do-evento: "&aVocê saiu do evento e foi enviado de volta ao seu local original."
+  na-lista-de-evento: "&cVocê não está participando de nenhum evento."
+  eliminado: "&cVocê foi eliminado do evento!"
   plugin-recarregado: "&aConfiguração do EventoPvP recarregada com sucesso!"
-  jogadores-insuficientes: "&cO evento precisa de pelo menos %min% jogadores para iniciar. Atualmente há apenas %atual%."
+  jogadores-insuficientes: "&cO evento não pode ser iniciado com apenas %atual% jogador(es). É necessário o mínimo de %min% jogadores para haver combate."
   kit-definido: "&aO kit do evento foi definido com sucesso com os itens do seu inventário!"
 
 broadcasts:
-  evento-aberto: "&aEvento PvP aberto! Digite /evento para participar."
-  batalha-comecou: "&cA batalha começou!"
-  evento-encerrado: "&cEvento encerrado."
+  evento-aberto: "&aEvento PvP aberto! Digite &e/evento entrar &apara participar."
+  batalha-comecou: "&cA batalha começou na arena! Que vença o melhor."
+  evento-encerrado: "&cO evento foi encerrado por um administrador."
   vencedor: "&6%player% venceu o Evento PvP!"
 
-# Comandos executados pelo console (%player% será substituído pelo nome do jogador)
 comandos:
-  Login: "warp Lobby %player%"
   lobby: "warp evento_lobby %player%"
   arena: "warp evento_arena %player%"
   spec: "warp evento_spec %player%"

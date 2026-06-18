@@ -36,11 +36,10 @@ public class EventoPvP extends JavaPlugin {
         criarJogadoresConfig();
 
         getCommand("evento").setExecutor(new EventoComando(this));
-        getCommand("sairevento").setExecutor(new SairEventoComando(this));
 
         getServer().getPluginManager().registerEvents(new EventoListeners(this), this);
 
-        getLogger().info("Plugin EventoPvP (Versao Final) ativado!");
+        getLogger().info("Plugin EventoPvP Padronizado e Otimizado!");
     }
 
     @Override

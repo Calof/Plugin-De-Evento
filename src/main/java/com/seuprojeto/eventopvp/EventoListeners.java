@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -56,9 +57,7 @@ public class EventoListeners implements Listener {
             boolean estavaVivo = plugin.vivos.remove(p.getUniqueId());
             
             p.getInventory().clear();
-            
-            Location loc = plugin.localAnterior.remove(p.getUniqueId());
-            if (loc != null) p.teleport(loc);
+            plugin.localAnterior.remove(p.getUniqueId());
 
             if (plugin.iniciado && estavaVivo) {
                 plugin.verificarVencedor();
@@ -66,7 +65,7 @@ public class EventoListeners implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         Player p = event.getPlayer();
         String uuidStr = p.getUniqueId().toString();
@@ -82,13 +81,22 @@ public class EventoListeners implements Listener {
                 p.setFireTicks(0);
                 p.getActivePotionEffects().forEach(effect -> p.removePotionEffect(effect.getType()));
 
-                String cmdLogin = plugin.getConfig().getString("comandos.login", "").replace("%player%", p.getName());
-                if (!cmdLogin.isEmpty()) Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdLogin);
+                String cmdLobby = plugin.getConfig().getString("comandos.lobby", "").replace("%player%", p.getName());
+                if (!cmdLobby.isEmpty()) {
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdLobby);
+                }
+
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (p.isOnline()) {
+                        p.teleport(locOriginal);
+                        p.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(
+                            "&cSeu login foi aprovado! Você foi retirado do evento com segurança e devolvido à sua localização original."
+                        ));
+                    }
+                }, 25L);
 
                 plugin.getJogadoresConfig().set(uuidStr, null);
                 plugin.saveJogadoresConfig();
-                
-                p.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&cVocê deslogou durante o evento e foi enviado de volta ao seu local original."));
                 
                 if (plugin.iniciado) {
                     plugin.verificarVencedor();

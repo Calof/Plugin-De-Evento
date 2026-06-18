@@ -4,8 +4,5 @@ main: com.seuprojeto.eventopvp.EventoPvP
 api-version: '1.21'
 commands:
   evento:
-    description: Comando principal do evento PvP.
-    permission: evento.player
-  sairevento:
-    description: Sai do evento atual.
+    description: Comando central do evento PvP.
     permission: evento.player
