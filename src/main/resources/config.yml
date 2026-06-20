@@ -1,13 +1,52 @@
 # ==========================================================
-#                  CONFIGURAÇÃO DO EVENTOPVP
+#             PREMIAÇÕES E REGRAS DA ARENA
 # ==========================================================
 
+# Quantia de dinheiro que o grande vencedor do evento receberá.
 premio: 50000.0
-premio-penultimo: 15000.0
-minimo-jogadores: 2
-tempo-espera-vencedor: 5
 
-# Lista de efeitos dinâmicos salvos pelo comando administrativo
+# Quantia de dinheiro dada ao segundo colocado (o penúltimo jogador que sobrou de pé).
+premio-penultimo: 15000.0
+
+# Quantidade mínima de jogadores necessária para que o comando "/evento pvp iniciar" funcione.
+minimo-jogadores: 1
+
+# Tempo de espera (em SEGUNDOS) após o anúncio do vencedor antes que todos os jogadores 
+# sejam teleportados de volta e o evento seja totalmente limpo/encerrado.
+# NOTA: Os efeitos visuais de vitória do jogador vão durar exatamente este mesmo tempo!
+tempo-espera-vencedor: 30
+
+# ==========================================================
+#          SISTEMA DE PREPARAÇÃO (FOLGA ANTES DA LUTA)
+# ==========================================================
+preparacao:
+  # Ativar tempo de folga/preparação ao iniciar o evento? (true = sim, false = não)
+  utilizar-preparacao: true
+
+  # Duração da contagem regressiva de preparação (em SEGUNDOS) antes de liberar o PvP.
+  tempo-preparacao: 5
+
+# ==========================================================
+#           SISTEMA DE CRONÔMETRO E CONTAGEM REGRESSIVA
+# ==========================================================
+cronometro:
+  # Ativar ou desativar o limite de tempo e o empate por decurso de prazo.
+  batalha-com-tempo: true
+
+  # Tempo máximo de duração da luta na arena (em SEGUNDOS) antes de forçar um empate.
+  duracao-maxima-batalha: 600
+
+  # Modo de exibição na ActionBar:
+  # false = Mostra o tempo todo o cronômetro rodando desde o início da luta.
+  # true  = Só começa a exibir a contagem na ActionBar quando o tempo estiver acabando.
+  exibir-apenas-no-final: false
+
+  # Define a partir de quantos SEGUNDOS restantes o cronômetro é considerado "quase esgotando".
+  segundos-aviso-final: 10
+
+# ==========================================================
+#                  DEMAIS CONFIGURAÇÕES
+# ==========================================================
 efeitos-arena:
   - "SPEED:0"
   - "INCREASE_DAMAGE:0"
@@ -27,13 +66,13 @@ mensagens:
   plugin-recarregado: "&aConfiguração do EventoPvP recarregada com sucesso!"
   jogadores-insuficientes: "&cO evento não pode ser iniciado com apenas %atual% jogador(es). É necessário o mínimo de %min% jogadores."
   kit-definido: "&aO kit do evento foi definido com sucesso!"
-  
-  # Mensagens administrativas do gerenciador de poções
   efeito-adicionado: "&aEfeito &e%effect%&a adicionado com sucesso para a arena!"
   efeito-removido: "&aEfeito &e%effect%&a removido da arena."
   efeito-nao-encontrado: "&cEsse efeito não está na lista da arena."
   efeito-invalido: "&cNome de efeito inválido do Minecraft. Use nomes como SPEED, JUMP_BOOST, etc."
   efeitos-limpos: "&aTodos os efeitos da arena foram removidos."
+  spawn-setado: "&aSpawn administrativo de número &e%num%&a configurado com sucesso!"
+  spawn-erro-numero: "&cPor favor, especifique um número de índice válido para o spawn."
 
 broadcasts:
   evento-aberto: "&aEvento PvP aberto! Digite &e/evento pvp entrar &apara participar."
@@ -41,6 +80,9 @@ broadcasts:
   evento-encerrado: "&cO evento foi encerrado por um administrador."
   vencedor: "&6%player% venceu o Evento PvP!"
   penultimo: "&e%player% ficou em segundo lugar (penúltimo de pé) e garantiu uma recompensa!"
+  empate-tempo: "&cO tempo da batalha esgotou! O evento terminou em empate."
+  jogador-entrou-evento: "&7[&a+&7] &e%player% &7entrou no evento!"
+  jogador-saiu-evento: "&7[&c-&7] &e%player% &7saiu do evento."
 
 comandos:
   lobby: "warp evento_lobby %player%"

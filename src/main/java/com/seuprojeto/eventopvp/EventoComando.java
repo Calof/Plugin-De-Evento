@@ -3,7 +3,6 @@ package com.seuprojeto.eventopvp;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -11,12 +10,12 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.StringUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class EventoComando implements CommandExecutor, TabCompleter {
 
@@ -28,18 +27,12 @@ public class EventoComando implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length < 2 || !args[0].equalsIgnoreCase("pvp")) {
-            sender.sendMessage(plugin.getMsg("mensagens.comando-invalido"));
+        if (args.length < 2 || !args[0].equalsIgnoreCase("pvp") || args[1].equalsIgnoreCase("ajuda") || args[1].equalsIgnoreCase("help")) {
+            exibirMenuAjuda(sender);
             return true;
         }
 
         String sub = args[1].toLowerCase();
-
-        // ================= COMANDOS JOGADORES =================
-        if (sub.equals("ajuda") || sub.equals("help")) {
-            enviarMenuAjuda(sender);
-            return true;
-        }
 
         if (sub.equals("entrar")) {
             if (!(sender instanceof Player)) {
@@ -65,17 +58,24 @@ public class EventoComando implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            plugin.localAnterior.put(p.getUniqueId(), p.getLocation());
             plugin.participantes.add(p.getUniqueId());
             plugin.jaEntraram.add(p.getUniqueId());
-
-            plugin.getJogadoresConfig().set(p.getUniqueId().toString(), p.getLocation());
+            plugin.localAnterior.put(p.getUniqueId(), p.getLocation());
+            plugin.getJogadoresConfig().set(p.getUniqueId().toString(), true);
             plugin.saveJogadoresConfig();
 
-            String cmdLobby = plugin.getConfig().getString("comandos.lobby", "").replace("%player%", p.getName());
-            if (!cmdLobby.isEmpty()) Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdLobby);
-
             p.sendMessage(plugin.getMsg("mensagens.entrou-no-evento"));
+
+            // Broadcast global de entrada adicionado aqui:
+            String msgEntrada = plugin.getConfig().getString("broadcasts.jogador-entrou-evento", "").replace("%player%", p.getName());
+            if (!msgEntrada.isEmpty()) {
+                Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgEntrada));
+            }
+
+            String cmdLobbyRaw = plugin.getConfig().getString("comandos.lobby", "");
+            if (!cmdLobbyRaw.isEmpty()) {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdLobbyRaw.replace("%player%", p.getName()));
+            }
             return true;
         }
 
@@ -92,26 +92,27 @@ public class EventoComando implements CommandExecutor, TabCompleter {
             }
 
             plugin.participantes.remove(p.getUniqueId());
-            
             if (plugin.vivos.size() == 2 && plugin.vivos.contains(p.getUniqueId())) {
                 plugin.penultimoUUID = p.getUniqueId();
             }
             boolean estavaVivo = plugin.vivos.remove(p.getUniqueId());
-
+            
             p.getInventory().clear();
-            p.setFireTicks(0);
             p.getActivePotionEffects().forEach(effect -> p.removePotionEffect(effect.getType()));
-            if (p.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
-                p.setHealth(p.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
-            }
 
-            Location loc = plugin.localAnterior.remove(p.getUniqueId());
-            if (loc != null) p.teleport(loc);
+            org.bukkit.Location backLoc = plugin.localAnterior.remove(p.getUniqueId());
+            if (backLoc != null) p.teleport(backLoc);
 
             plugin.getJogadoresConfig().set(p.getUniqueId().toString(), null);
             plugin.saveJogadoresConfig();
 
             p.sendMessage(plugin.getMsg("mensagens.saiu-do-evento"));
+
+            // Broadcast global de saída adicionado aqui:
+            String msgSaida = plugin.getConfig().getString("broadcasts.jogador-saiu-evento", "").replace("%player%", p.getName());
+            if (!msgSaida.isEmpty()) {
+                Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgSaida));
+            }
 
             if (plugin.iniciado && estavaVivo) {
                 plugin.verificarVencedor();
@@ -119,17 +120,57 @@ public class EventoComando implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        // ================= COMANDOS ADMINISTRADORES =================
-        if (!sender.hasPermission("evento.admin")) {
+        // --- COMANDOS ADMINISTRATIVOS ---
+        if (!sender.hasPermission("eventopvp.admin")) {
             sender.sendMessage(plugin.getMsg("mensagens.sem-permissao"));
             return true;
         }
 
         if (sub.equals("abrir")) {
             plugin.aberto = true;
+            plugin.iniciado = false;
+            plugin.participantes.clear();
+            plugin.vivos.clear();
             plugin.jaEntraram.clear();
+            plugin.localAnterior.clear();
             plugin.penultimoUUID = null;
+            plugin.pvpLiberado = false;
+
             Bukkit.broadcast(plugin.getMsg("broadcasts.evento-aberto"));
+            return true;
+        }
+
+        if (sub.equals("setspawn")) {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(plugin.getMsg("mensagens.apenas-jogadores"));
+                return true;
+            }
+            if (args.length < 3) {
+                sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&cUse: /evento pvp setspawn <numero do spawn>"));
+                return true;
+            }
+
+            Player p = (Player) sender;
+            String numeroSpawn = args[2];
+
+            try {
+                Integer.parseInt(numeroSpawn);
+            } catch (NumberFormatException e) {
+                p.sendMessage(plugin.getMsg("mensagens.spawn-erro-numero"));
+                return true;
+            }
+
+            Location loc = p.getLocation();
+            String path = "spawns." + numeroSpawn;
+            plugin.getSpawnsConfig().set(path + ".world", loc.getWorld().getName());
+            plugin.getSpawnsConfig().set(path + ".x", loc.getX());
+            plugin.getSpawnsConfig().set(path + ".y", loc.getY());
+            plugin.getSpawnsConfig().set(path + ".z", loc.getZ());
+            plugin.getSpawnsConfig().set(path + ".yaw", loc.getYaw());
+            plugin.getSpawnsConfig().set(path + ".pitch", loc.getPitch());
+            plugin.saveSpawnsConfig();
+
+            p.sendMessage(plugin.getMsg("mensagens.spawn-setado").replaceText(b -> b.matchLiteral("%num%").replacement(numeroSpawn)));
             return true;
         }
 
@@ -153,7 +194,7 @@ public class EventoComando implements CommandExecutor, TabCompleter {
             List<ItemStack> itensKit = new ArrayList<>();
             if (itensRaw != null) {
                 for (Object obj : itensRaw) {
-                    itensKit.add(obj instanceof ItemStack ? (ItemStack) obj : null);
+                    if (obj instanceof ItemStack) itensKit.add((ItemStack) obj);
                 }
             }
 
@@ -161,17 +202,45 @@ public class EventoComando implements CommandExecutor, TabCompleter {
             List<ItemStack> armaduraKit = new ArrayList<>();
             if (armaduraRaw != null) {
                 for (Object obj : armaduraRaw) {
-                    armaduraKit.add(obj instanceof ItemStack ? (ItemStack) obj : null);
+                    if (obj instanceof ItemStack) armaduraKit.add((ItemStack) obj);
                 }
             }
 
-            for (java.util.UUID uuid : plugin.participantes) {
+            List<Location> listaSpawnsCustomizados = new ArrayList<>();
+            if (plugin.getSpawnsConfig().getConfigurationSection("spawns") != null) {
+                for (String key : plugin.getSpawnsConfig().getConfigurationSection("spawns").getKeys(false)) {
+                    String wName = plugin.getSpawnsConfig().getString("spawns." + key + ".world");
+                    if (wName != null && Bukkit.getWorld(wName) != null) {
+                        double x = plugin.getSpawnsConfig().getDouble("spawns." + key + ".x");
+                        double y = plugin.getSpawnsConfig().getDouble("spawns." + key + ".y");
+                        double z = plugin.getSpawnsConfig().getDouble("spawns." + key + ".z");
+                        float yaw = (float) plugin.getSpawnsConfig().getDouble("spawns." + key + ".yaw");
+                        float pitch = (float) plugin.getSpawnsConfig().getDouble("spawns." + key + ".pitch");
+                        listaSpawnsCustomizados.add(new Location(Bukkit.getWorld(wName), x, y, z, yaw, pitch));
+                    }
+                }
+            }
+
+            int indexSpawn = 0;
+            for (UUID uuid : plugin.participantes) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null) {
                     plugin.vivos.add(uuid);
                     p.getInventory().clear();
 
-                    if (!cmdArenaRaw.isEmpty()) Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdArenaRaw.replace("%player%", p.getName()));
+                    if (!listaSpawnsCustomizados.isEmpty()) {
+                        Location destino = listaSpawnsCustomizados.get(indexSpawn % listaSpawnsCustomizados.size());
+                        p.teleport(destino);
+                        indexSpawn++;
+                    } else {
+                        if (!cmdArenaRaw.isEmpty()) {
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdArenaRaw.replace("%player%", p.getName()));
+                        }
+                        Location locAtual = p.getLocation();
+                        double randX = (Math.random() - 0.5) * 3.0;
+                        double randZ = (Math.random() - 0.5) * 3.0;
+                        p.teleport(locAtual.add(randX, 0, randZ));
+                    }
 
                     if (!itensKit.isEmpty()) p.getInventory().setContents(itensKit.toArray(new ItemStack[0]));
                     if (!armaduraKit.isEmpty()) p.getInventory().setArmorContents(armaduraKit.toArray(new ItemStack[0]));
@@ -180,7 +249,14 @@ public class EventoComando implements CommandExecutor, TabCompleter {
                     p.updateInventory();
                 }
             }
-            Bukkit.broadcast(plugin.getMsg("broadcasts.batalha-comecou"));
+            
+            if (plugin.getConfig().getBoolean("preparacao.utilizar-preparacao", true)) {
+                plugin.iniciarContagemPreparacao();
+            } else {
+                plugin.pvpLiberado = true;
+                Bukkit.broadcast(plugin.getMsg("broadcasts.batalha-comecou"));
+                plugin.iniciarAgendadoresBatalha();
+            }
             return true;
         }
 
@@ -196,197 +272,121 @@ public class EventoComando implements CommandExecutor, TabCompleter {
                 return true;
             }
             Player p = (Player) sender;
-
-            List<ItemStack> inventarioLista = new ArrayList<>();
-            for (ItemStack item : p.getInventory().getContents()) inventarioLista.add(item);
-
-            List<ItemStack> armaduraLista = new ArrayList<>();
-            for (ItemStack item : p.getInventory().getArmorContents()) armaduraLista.add(item);
-
-            plugin.getKitConfig().set("inventario", inventarioLista);
-            plugin.getKitConfig().set("armadura", armaduraLista);
+            plugin.getKitConfig().set("inventario", Arrays.asList(p.getInventory().getContents()));
+            plugin.getKitConfig().set("armadura", Arrays.asList(p.getInventory().getArmorContents()));
             plugin.saveKitConfig();
-
             p.sendMessage(plugin.getMsg("mensagens.kit-definido"));
             return true;
         }
 
-        if (sub.equals("reload")) {
+        if (sub.equals("recarregar")) {
             plugin.reloadConfig();
             sender.sendMessage(plugin.getMsg("mensagens.plugin-recarregado"));
             return true;
         }
 
-        // ================= SISTEMA DINÂMICO DE EFEITOS =================
         if (sub.equals("efeito")) {
             if (args.length < 3) {
-                sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&cUse: /evento pvp efeito <adicionar|remover|limpar|lista>"));
+                sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&cUse: /evento pvp efeito <adicionar/remover/limpar/lista> [efeito:nivel]"));
                 return true;
             }
-            String acaoEfeito = args[2].toLowerCase();
-            List<String> listaAtual = plugin.getConfig().getStringList("efeitos-arena");
+            String acao = args[2].toLowerCase();
 
-            if (acaoEfeito.equals("adicionar")) {
-                if (args.length < 4) {
-                    sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&cUse: /evento pvp efeito adicionar <NOME_EFEITO> [nivel]"));
-                    return true;
-                }
-                String nomeEfeito = args[3].toUpperCase();
-                PotionEffectType tipo = PotionEffectType.getByName(nomeEfeito);
-                if (tipo == null) {
-                    sender.sendMessage(plugin.getMsg("mensagens.efeito-invalido"));
-                    return true;
-                }
-                int nivel = 1;
-                if (args.length >= 5) {
-                    try { nivel = Integer.parseInt(args[4]); } catch (NumberFormatException e) { nivel = 1; }
-                }
-                int amplifier = nivel - 1 < 0 ? 0 : nivel - 1;
-
-                listaAtual.removeIf(s -> s.toUpperCase().startsWith(nomeEfeito + ":") || s.toUpperCase().equals(nomeEfeito));
-                listaAtual.add(nomeEfeito + ":" + amplifier);
-                
-                plugin.getConfig().set("efeitos-arena", listaAtual);
-                plugin.saveConfig();
-
-                String msg = plugin.getConfig().getString("mensagens.efeito-adicionado", "").replace("%effect%", nomeEfeito + " " + nivel);
-                sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(msg));
+            if (acao.equals("lista")) {
+                List<String> efeitos = plugin.getConfig().getStringList("efeitos-arena");
+                sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&aEfeitos atuais na arena: &e" + String.join(", ", efeitos)));
                 return true;
             }
-
-            if (acaoEfeito.equals("remover")) {
-                if (args.length < 4) {
-                    sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&cUse: /evento pvp efeito remover <NOME_EFEITO>"));
-                    return true;
-                }
-                String nomeEfeito = args[3].toUpperCase();
-                boolean removido = listaAtual.removeIf(s -> s.toUpperCase().startsWith(nomeEfeito + ":") || s.toUpperCase().equals(nomeEfeito));
-                
-                if (!removido) {
-                    sender.sendMessage(plugin.getMsg("mensagens.efeito-nao-encontrado"));
-                    return true;
-                }
-
-                plugin.getConfig().set("efeitos-arena", listaAtual);
-                plugin.saveConfig();
-
-                String msg = plugin.getConfig().getString("mensagens.efeito-removido", "").replace("%effect%", nomeEfeito);
-                sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(msg));
-                return true;
-            }
-
-            if (acaoEfeito.equals("limpar")) {
-                listaAtual.clear();
-                plugin.getConfig().set("efeitos-arena", listaAtual);
+            if (acao.equals("limpar")) {
+                plugin.getConfig().set("efeitos-arena", new ArrayList<>());
                 plugin.saveConfig();
                 sender.sendMessage(plugin.getMsg("mensagens.efeitos-limpos"));
                 return true;
             }
 
-            if (acaoEfeito.equals("lista")) {
-                sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&6=== EFEITOS ATUAIS DA ARENA ==="));
-                if (listaAtual.isEmpty()) {
-                    sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&7Nenhum efeito configurado."));
-                } else {
-                    for (String ef : listaAtual) {
-                        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&e- " + ef));
-                    }
-                }
-                sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&6=============================="));
+            if (args.length < 4) {
+                sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&cEspecifique o efeito. Ex: SPEED:0"));
                 return true;
             }
+
+            String efeitoInput = args[3].toUpperCase();
+            String nomeEfeito = efeitoInput.contains(":") ? efeitoInput.split(":")[0] : efeitoInput;
+
+            if (PotionEffectType.getByName(nomeEfeito) == null) {
+                sender.sendMessage(plugin.getMsg("mensagens.efeito-invalido"));
+                return true;
+            }
+
+            List<String> listaEfeitos = plugin.getConfig().getStringList("efeitos-arena");
+
+            if (acao.equals("adicionar")) {
+                String amp = efeitoInput.contains(":") ? legacyGetAmp(efeitoInput) : "0";
+                String entradaCompleta = nomeEfeito + ":" + amp;
+                listaEfeitos.removeIf(s -> s.startsWith(nomeEfeito + ":"));
+                listaEfeitos.add(entradaCompleta);
+                plugin.getConfig().set("efeitos-arena", listaEfeitos);
+                plugin.saveConfig();
+                sender.sendMessage(plugin.getMsg("mensagens.efeito-adicionado").replaceText(b -> b.matchLiteral("%effect%").replacement(entradaCompleta)));
+            } else if (acao.equals("remover")) {
+                boolean removido = listaEfeitos.removeIf(s -> s.startsWith(nomeEfeito + ":"));
+                if (removido) {
+                    plugin.getConfig().set("efeitos-arena", listaEfeitos);
+                    plugin.saveConfig();
+                    sender.sendMessage(plugin.getMsg("mensagens.efeito-recorrente-removido").replaceText(b -> b.matchLiteral("%effect%").replacement(nomeEfeito)));
+                } else {
+                    sender.sendMessage(plugin.getMsg("mensagens.efeito-nao-encontrado"));
+                }
+            }
+            return true;
         }
 
         sender.sendMessage(plugin.getMsg("mensagens.comando-invalido"));
         return true;
     }
 
-    // =========================================================================
-    // LÓGICA DO AUTOCOMPLETAR (TAB COMPLETE)
-    // =========================================================================
-    @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        List<String> completions = new ArrayList<>();
-        List<String> listaProvisoria = new ArrayList<>();
-
-        if (args.length == 1) {
-            listaProvisoria.add("pvp");
-            StringUtil.copyPartialMatches(args[0], listaProvisoria, completions);
-            Collections.sort(completions);
-            return completions;
-        }
-
-        if (!args[0].equalsIgnoreCase("pvp")) {
-            return Collections.emptyList();
-        }
-
-        if (args.length == 2) {
-            listaProvisoria.addAll(Arrays.asList("entrar", "sair", "ajuda"));
-            if (sender.hasPermission("evento.admin")) {
-                listaProvisoria.addAll(Arrays.asList("abrir", "iniciar", "fechar", "definirkit", "reload", "efeito"));
-            }
-            StringUtil.copyPartialMatches(args[1], listaProvisoria, completions);
-            Collections.sort(completions);
-            return completions;
-        }
-
-        if (args.length == 3 && args[1].equalsIgnoreCase("efeito")) {
-            if (sender.hasPermission("evento.admin")) {
-                listaProvisoria.addAll(Arrays.asList("adicionar", "remover", "limpar", "lista"));
-                StringUtil.copyPartialMatches(args[2], listaProvisoria, completions);
-                Collections.sort(completions);
-                return completions;
-            }
-        }
-
-        if (args.length == 4 && args[1].equalsIgnoreCase("efeito")) {
-            if (sender.hasPermission("evento.admin")) {
-                String subAcao = args[2].toLowerCase();
-                
-                if (subAcao.equals("adicionar")) {
-                    for (PotionEffectType type : PotionEffectType.values()) {
-                        if (type != null && type.getName() != null) {
-                            listaProvisoria.add(type.getName().toLowerCase());
-                        }
-                    }
-                } else if (subAcao.equals("remover")) {
-                    List<String> efeitosAtuais = plugin.getConfig().getStringList("efeitos-arena");
-                    for (String linha : efeitosAtuais) {
-                        listaProvisoria.add(linha.split(":")[0].toLowerCase());
-                    }
-                }
-
-                StringUtil.copyPartialMatches(args[3], listaProvisoria, completions);
-                Collections.sort(completions);
-                return completions;
-            }
-        }
-
-        if (args.length == 5 && args[1].equalsIgnoreCase("efeito") && args[2].equalsIgnoreCase("adicionar")) {
-            if (sender.hasPermission("evento.admin")) {
-                listaProvisoria.addAll(Arrays.asList("1", "2", "3"));
-                StringUtil.copyPartialMatches(args[4], listaProvisoria, completions);
-                return completions;
-            }
-        }
-
-        return Collections.emptyList();
+    private String legacyGetAmp(String input) {
+        String[] split = input.split(":");
+        return split.length > 1 ? split[1] : "0";
     }
 
-    private void enviarMenuAjuda(CommandSender sender) {
-        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&6====== COMANDOS DO EVENTO PVP ======"));
-        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&e/evento pvp entrar &7- Entra no evento se aberto."));
-        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&e/evento pvp sair &7- Desiste e sai do evento."));
-        
-        if (sender.hasPermission("evento.admin")) {
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c=== COMANDOS ADMINISTRATIVOS ==="));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp abrir &7- Abre inscrições."));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp iniciar &7- Inicia a arena com kits e efeitos."));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp fechar &7- Força o encerramento do evento."));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp definirkit &7- Salva seu inventário como Kit."));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp reload &7- Recarrega a config.yml."));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp efeito <adicionar|remover|limpar|lista> &7- Gerencia poções."));
+    private void exibirMenuAjuda(CommandSender sender) {
+        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&r"));
+        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&6============= &e&lMENU DE AJUDA: EVENTO PVP &6============="));
+        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&e/evento pvp entrar &7- Participar do evento aberto."));
+        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&e/evento pvp sair &7- Sair do evento e voltar ao ponto anterior."));
+        if (sender.hasPermission("eventopvp.admin")) {
+            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp abrir &7- Abre as inscrições do evento pvp."));
+            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp iniciar &7- Teleporta e inicia os contadores de luta."));
+            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp fechar &7- Força a finalização imediata do evento."));
+            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp setspawn <id> &7- Cria um ponto de nascimento na sua posição."));
+            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp definirkit &7- Salva seu inventário atual como o kit de luta."));
+            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp efeito <add/remove/limpar/lista> &7- Gerencia poções."));
+            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp recarregar &7- Atualiza as variáveis da config.yml."));
         }
-        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&6================================="));
+        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&6===================================================="));
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length == 1) {
+            return Arrays.asList("pvp").stream().filter(s -> s.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("pvp")) {
+            List<String> subComandos = new ArrayList<>(Arrays.asList("entrar", "sair", "ajuda", "help"));
+            if (sender.hasPermission("eventopvp.admin")) {
+                subComandos.addAll(Arrays.asList("abrir", "iniciar", "fechar", "definirkit", "recarregar", "efeito", "setspawn"));
+            }
+            return subComandos.stream().filter(s -> s.startsWith(args[1].toLowerCase())).collect(Collectors.toList());
+        }
+        if (args.length == 3 && args[1].equalsIgnoreCase("setspawn") && sender.hasPermission("eventopvp.admin")) {
+            return Arrays.asList("1", "2", "3", "4", "5");
+        }
+        if (args.length == 3 && args[1].equalsIgnoreCase("efeito") && sender.hasPermission("eventopvp.admin")) {
+            return Arrays.asList("adicionar", "remover", "limpar", "lista").stream().filter(s -> s.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
+        }
+        if (args.length == 4 && args[1].equalsIgnoreCase("efeito") && (args[2].equalsIgnoreCase("adicionar") || args[2].equalsIgnoreCase("remover")) && sender.hasPermission("eventopvp.admin")) {
+            return Arrays.stream(PotionEffectType.values()).map(PotionEffectType::getName).map(String::toLowerCase).filter(name -> name.startsWith(args[3].toLowerCase())).collect(Collectors.toList());
+        }
+        return new ArrayList<>();
     }
 }

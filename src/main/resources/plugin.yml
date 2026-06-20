@@ -1,8 +1,16 @@
 name: EventoPvP
-version: 1.3
+version: 1.0.0
 main: com.seuprojeto.eventopvp.EventoPvP
-api-version: '1.21'
+api-version: 1.20
 commands:
   evento:
-    description: Comando central de eventos.
-    permission: evento.player
+    description: Comando principal do evento PvP.
+    permission: eventopvp.usar
+    usage: /<command> pvp [subcomando]
+permissions:
+  eventopvp.usar:
+    description: Permite usar os comandos básicos de jogador (/evento pvp entrar/sair).
+    default: true
+  eventopvp.admin:
+    description: Permite usar os comandos administrativos do evento.
+    default: op
