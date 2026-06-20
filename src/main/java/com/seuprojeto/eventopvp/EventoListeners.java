@@ -15,6 +15,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.potion.PotionEffect;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public class EventoListeners implements Listener {
 
@@ -31,7 +32,6 @@ public class EventoListeners implements Listener {
 
         if (!plugin.vivos.contains(vitima.getUniqueId())) return;
 
-        // CORRIGIDO: Se o PvP não estiver explicitamente liberado, cancela qualquer dano sofrido por participantes ativos
         if (!plugin.pvpLiberado) {
             event.setCancelled(true);
             return;
@@ -39,6 +39,39 @@ public class EventoListeners implements Listener {
 
         if (vitima.getHealth() - event.getFinalDamage() <= 0) {
             event.setCancelled(true);
+
+            // Identificar se houve um atacante direto para as mensagens de abate
+            Player killer = null;
+            if (vitima.getLastDamageCause() instanceof EntityDamageByEntityEvent) {
+                EntityDamageByEntityEvent edbe = (EntityDamageByEntityEvent) vitima.getLastDamageCause();
+                if (edbe.getDamager() instanceof Player) {
+                    killer = (Player) edbe.getDamager();
+                } else if (edbe.getDamager() instanceof AbstractArrow) {
+                    AbstractArrow arrow = (AbstractArrow) edbe.getDamager();
+                    if (arrow.getShooter() instanceof Player) {
+                        killer = (Player) arrow.getShooter();
+                    }
+                }
+            }
+
+            if (killer != null && plugin.vivos.contains(killer.getUniqueId())) {
+                String msgAbate = plugin.getConfig().getString("broadcasts.abate-simples", "")
+                        .replace("%vitima%", vitima.getName())
+                        .replace("%atacante%", killer.getName());
+                Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgAbate));
+
+                int streakAtual = plugin.killstreak.getOrDefault(killer.getUniqueId(), 0) + 1;
+                plugin.killstreak.put(killer.getUniqueId(), streakAtual);
+
+                if (streakAtual % 3 == 0) {
+                    String msgStreak = plugin.getConfig().getString("broadcasts.killstreak", "")
+                            .replace("%player%", killer.getName())
+                            .replace("%kills%", String.valueOf(streakAtual));
+                    Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgStreak));
+                }
+            }
+
+            plugin.killstreak.remove(vitima.getUniqueId());
 
             if (vitima.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
                 vitima.setHealth(vitima.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
@@ -74,7 +107,6 @@ public class EventoListeners implements Listener {
 
         if (!plugin.vivos.contains(vitima.getUniqueId())) return;
 
-        // CORRIGIDO: Bloqueia agressões físicas/flechas instantaneamente se pvpLiberado for falso
         if (!plugin.pvpLiberado) {
             event.setCancelled(true);
             return;
@@ -139,6 +171,7 @@ public class EventoListeners implements Listener {
        
         if (plugin.participantes.contains(p.getUniqueId())) {
             plugin.participantes.remove(p.getUniqueId());
+            plugin.killstreak.remove(p.getUniqueId());
             
             if (plugin.vivos.size() == 2 && plugin.vivos.contains(p.getUniqueId())) {
                 plugin.penultimoUUID = p.getUniqueId();

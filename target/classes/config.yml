@@ -3,6 +3,7 @@
 # ==========================================================
 
 # Quantia de dinheiro que o grande vencedor do evento receberá.
+# NOTA: Em caso de empate por tempo, este valor será dividido igualmente entre os sobreviventes!
 premio: 15000.0
 
 # Quantia de dinheiro dada ao segundo colocado (o penúltimo jogador que sobrou de pé).
@@ -13,35 +14,22 @@ minimo-jogadores: 2
 
 # Tempo de espera (em SEGUNDOS) após o anúncio do vencedor antes que todos os jogadores 
 # sejam teleportados de volta e o evento seja totalmente limpo/encerrado.
-# NOTA: Os efeitos visuais de vitória do jogador vão durar exatamente este mesmo tempo!
 tempo-espera-vencedor: 30
 
 # ==========================================================
 #          SISTEMA DE PREPARAÇÃO (FOLGA ANTES DA LUTA)
 # ==========================================================
 preparacao:
-  # Ativar tempo de folga/preparação ao iniciar o evento? (true = sim, false = não)
   utilizar-preparacao: true
-
-  # Duração da contagem regressiva de preparação (em SEGUNDOS) antes de liberar o PvP.
   tempo-preparacao: 5
 
 # ==========================================================
 #           SISTEMA DE CRONÔMETRO E CONTAGEM REGRESSIVA
 # ==========================================================
 cronometro:
-  # Ativar ou desativar o limite de tempo e o empate por decurso de prazo.
   batalha-com-tempo: true
-
-  # Tempo máximo de duração da luta na arena (em SEGUNDOS) antes de forçar um empate.
-  duracao-maxima-batalha: 6m00
-
-  # Modo de exibição na ActionBar:
-  # false = Mostra o tempo todo o cronômetro rodando desde o início da luta.
-  # true  = Só começa a exibir a contagem na ActionBar quando o tempo estiver acabando.
+  duracao-maxima-batalha: 300
   exibir-apenas-no-final: false
-
-  # Define a partir de quantos SEGUNDOS restantes o cronômetro é considerado "quase esgotando".
   segundos-aviso-final: 10
 
 # ==========================================================
@@ -54,7 +42,7 @@ ajuda:
     - "&e/evento pvp sair &7- Sair do evento e voltar ao ponto anterior."
     - "&6===================================================="
   admin:
-    - "&6============= &e&lMENU DE AJUDA: EVENTO PVP (ADMIN) &6============="
+    - "&e&lMENU DE AJUDA: EVENTO PVP (ADMIN) &6=================="
     - "&e/evento pvp entrar &7- Participar do evento aberto."
     - "&e/evento pvp sair &7- Sair do evento e voltar ao ponto anterior."
     - "&c/evento pvp abrir &7- Abre as inscrições do evento pvp."
@@ -71,9 +59,7 @@ ajuda:
 # ==========================================================
 #                  DEMAIS CONFIGURAÇÕES
 # ==========================================================
-efeitos-arena:
-  - "SPEED:0"
-  - "INCREASE_DAMAGE:0"
+efeitos-arena: []
 
 mensagens:
   comando-invalido: "&cComando não reconhecido. Use /evento pvp ajuda para ver os comandos."
@@ -107,9 +93,12 @@ broadcasts:
   evento-encerrado: "&cO evento foi encerrado por um administrador."
   vencedor: "&6%player% venceu o Evento PvP!"
   penultimo: "&e%player% ficou em segundo lugar (penúltimo de pé) e garantiu uma recompensa!"
-  empate-tempo: "&cO tempo da batalha esgotou! O evento terminou em empate."
+  empate-tempo: "&cO tempo da batalha esgotou! O evento terminou em empate entre %quantidade% jogadores."
+  empate-recompensa: "&aCada sobrevivente recebeu uma fração de &e$%quantia%&a pelo empate!"
   jogador-entrou-evento: "&7[&a+&7] &e%player% &7entrou no evento!"
   jogador-saiu-evento: "&7[&c-&7] &e%player% &7saiu do evento."
+  abate-simples: "&c%vitima% &7foi dropado por &a%atacante%&7!"
+  killstreak: "&6&lKILLS! &e%player% &7está imbativel com uma killstreak de &c%kills%&7!"
 
 comandos:
   lobby: "warp evento_lobby %player%"

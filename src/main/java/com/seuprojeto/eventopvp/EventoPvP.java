@@ -24,11 +24,14 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class EventoPvP extends JavaPlugin {
 
@@ -40,11 +43,12 @@ public class EventoPvP extends JavaPlugin {
     public final HashSet<UUID> vivos = new HashSet<>();
     public final HashSet<UUID> jaEntraram = new HashSet<>();
     public final HashMap<UUID, Location> localAnterior = new HashMap<>();
+    public final HashMap<UUID, Integer> killstreak = new HashMap<>();
     
     public UUID penultimoUUID = null;
 
-    private File kitFile, jogadoresFile, spawnsFile;
-    private FileConfiguration kitConfig, jogadoresConfig, spawnsConfig;
+    private File kitFile, jogadoresFile, spawnsFile, historicoFile;
+    private FileConfiguration kitConfig, jogadoresConfig, spawnsConfig, historicoConfig;
 
     private BukkitTask taskCronometroBatalha = null;
     private BukkitTask taskCronometroFim = null;
@@ -55,6 +59,7 @@ public class EventoPvP extends JavaPlugin {
         criarKitConfig();
         criarJogadoresConfig();
         criarSpawnsConfig();
+        criarHistoricoConfig();
 
         EventoComando cmdExecutor = new EventoComando(this);
         getCommand("evento").setExecutor(cmdExecutor);
@@ -62,7 +67,7 @@ public class EventoPvP extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new EventoListeners(this), this);
 
-        getLogger().info("Plugin EventoPvP Inicializado com Spawns Coordenados!");
+        getLogger().info("Plugin EventoPvP Inicializado com Logs e Divisão de Empate!");
     }
 
     @Override
@@ -93,6 +98,7 @@ public class EventoPvP extends JavaPlugin {
         vivos.clear();
         jaEntraram.clear();
         localAnterior.clear();
+        killstreak.clear();
         penultimoUUID = null;
         aberto = false;
         iniciado = false;
@@ -182,7 +188,12 @@ public class EventoPvP extends JavaPlugin {
                 }
 
                 if (tempoRestante <= 0) {
-                    Bukkit.broadcast(getMsg("broadcasts.empate-tempo"));
+                    String msgEmpate = getConfig().getString("broadcasts.empate-tempo", "")
+                            .replace("%quantidade%", String.valueOf(vivos.size()));
+                    Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgEmpate));
+                    
+                    processarPremioEmpate();
+                    
                     iniciado = false;
                     pvpLiberado = false;
                     iniciarAgendadorFimDoEvento();
@@ -208,6 +219,30 @@ public class EventoPvP extends JavaPlugin {
                 tempoRestante--;
             }
         }.runTaskTimer(this, 0L, 20L);
+    }
+
+    private void processarPremioEmpate() {
+        if (vivos.isEmpty()) return;
+        
+        double premioTotal = getConfig().getDouble("premio", 15000.0);
+        double parteDoPremio = premioTotal / vivos.size();
+        
+        List<String> nomesVencedores = vivos.stream()
+                .map(Bukkit::getPlayer)
+                .filter(p -> p != null && p.isOnline())
+                .map(Player::getName)
+                .collect(Collectors.toList());
+
+        for (String nome : nomesVencedores) {
+            String cmd = "eco give " + nome + " " + parteDoPremio;
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+        }
+
+        String msgRec = getConfig().getString("broadcasts.empate-recompensa", "")
+                .replace("%quantia%", String.format("%.2f", parteDoPremio));
+        Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgRec));
+        
+        salvarLogNoHistorico(nomesVencedores, "EMPATE");
     }
 
     public void iniciarAgendadorFimDoEvento() {
@@ -267,7 +302,7 @@ public class EventoPvP extends JavaPlugin {
                 String msgVencedor = getConfig().getString("broadcasts.vencedor", "").replace("%player%", vencedor.getName());
                 Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgVencedor));
 
-                int valorPremio = getConfig().getInt("premio", 50000);
+                double valorPremio = getConfig().getDouble("premio", 15000.0);
                 String cmdPremio = getConfig().getString("comandos.dar-premio", "")
                         .replace("%player%", vencedor.getName())
                         .replace("%premio%", String.valueOf(valorPremio));
@@ -279,6 +314,8 @@ public class EventoPvP extends JavaPlugin {
                 vencedor.getActivePotionEffects().forEach(effect -> vencedor.removePotionEffect(effect.getType()));
 
                 spawnEfeitosEspeciaisVencedor(vencedor);
+                
+                salvarLogNoHistorico(List.of(vencedor.getName()), "VITORIA");
             }
 
             if (penultimoUUID != null) {
@@ -287,29 +324,45 @@ public class EventoPvP extends JavaPlugin {
                     String msgPenultimo = getConfig().getString("broadcasts.penultimo", "").replace("%player%", penultimo.getName());
                     Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgPenultimo));
 
-                    int valorPenultimo = getConfig().getInt("premio-penultimo", 15000);
+                    double valorPenultimo = getConfig().getDouble("premio-penultimo", 1000.0);
                     String cmdPenultimo = getConfig().getString("comandos.dar-premio-penultimo", "")
                     .replace("%player%", penultimo.getName())
                     .replace("%premio%", String.valueOf(valorPenultimo));
         
-        // CORRIGIDO: Agora usa cmdPenultimo corretamente
-        if (!cmdPenultimo.isEmpty()) Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdPenultimo);
-    }
-}
+                    if (!cmdPenultimo.isEmpty()) Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdPenultimo);
+                }
+            }
 
             this.iniciado = false; 
             pvpLiberado = false;
             iniciarAgendadorFimDoEvento();
             
         } else if (this.vivos.isEmpty()) {
+            salvarLogNoHistorico(List.of("Nenhum"), "SEM_VENCEDORES");
             encerrarEvento();
         }
+    }
+
+    private void salvarLogNoHistorico(List<String> vencedores, String status) {
+        String idEdicao = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String path = "edicoes." + idEdicao;
+
+        List<String> todosParticipantes = jaEntraram.stream()
+                .map(Bukkit::getPlayer)
+                .filter(p -> p != null)
+                .map(Player::getName)
+                .collect(Collectors.toList());
+
+        getHistoricoConfig().set(path + ".status", status);
+        getHistoricoConfig().set(path + ".vencedores", vencedores);
+        getHistoricoConfig().set(path + ".participantes", todosParticipantes);
+        saveHistoricoConfig();
     }
 
     private void spawnEfeitosEspeciaisVencedor(Player p) {
         Location loc = p.getLocation();
         int tempoEsperaSegundos = getConfig().getInt("tempo-espera-vencedor", 30);
-        int maxTicksDeDuracao = tempoEsperaSegundos * 20; // Converte o tempo do config.yml em Ticks de servidores (20 tks = 1s)
+        int maxTicksDeDuracao = tempoEsperaSegundos * 20;
 
         for (int i = 0; i < 3; i++) {
             Bukkit.getScheduler().runTaskLater(this, () -> {
@@ -334,7 +387,6 @@ public class EventoPvP extends JavaPlugin {
 
             @Override
             public void run() {
-                // Modificado para respeitar dinamicamente o tempo estipulado na config.yml
                 if (!p.isOnline() || ticksExecutados > maxTicksDeDuracao || !p.getWorld().equals(loc.getWorld())) {
                     this.cancel();
                     return;
@@ -429,4 +481,16 @@ public class EventoPvP extends JavaPlugin {
 
     public FileConfiguration getSpawnsConfig() { return spawnsConfig; }
     public void saveSpawnsConfig() { try { spawnsConfig.save(spawnsFile); } catch (IOException e) { e.printStackTrace(); } }
+
+    private void criarHistoricoConfig() {
+        historicoFile = new File(getDataFolder(), "historico.yml");
+        if (!historicoFile.exists()) {
+            historicoFile.getParentFile().mkdirs();
+            try { historicoFile.createNewFile(); } catch (IOException e) { e.printStackTrace(); }
+        }
+        historicoConfig = YamlConfiguration.loadConfiguration(historicoFile);
+    }
+
+    public FileConfiguration getHistoricoConfig() { return historicoConfig; }
+    public void saveHistoricoConfig() { try { historicoConfig.save(historicoFile); } catch (IOException e) { e.printStackTrace(); } }
 }
