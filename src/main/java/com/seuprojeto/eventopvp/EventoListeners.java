@@ -31,7 +31,8 @@ public class EventoListeners implements Listener {
 
         if (!plugin.vivos.contains(vitima.getUniqueId())) return;
 
-        if (plugin.iniciado && !plugin.pvpLiberado) {
+        // CORRIGIDO: Se o PvP não estiver explicitamente liberado, cancela qualquer dano sofrido por participantes ativos
+        if (!plugin.pvpLiberado) {
             event.setCancelled(true);
             return;
         }
@@ -73,7 +74,8 @@ public class EventoListeners implements Listener {
 
         if (!plugin.vivos.contains(vitima.getUniqueId())) return;
 
-        if (plugin.iniciado && !plugin.pvpLiberado) {
+        // CORRIGIDO: Bloqueia agressões físicas/flechas instantaneamente se pvpLiberado for falso
+        if (!plugin.pvpLiberado) {
             event.setCancelled(true);
             return;
         }

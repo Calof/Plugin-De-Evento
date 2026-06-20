@@ -3,13 +3,13 @@
 # ==========================================================
 
 # Quantia de dinheiro que o grande vencedor do evento receberá.
-premio: 50000.0
+premio: 15000.0
 
 # Quantia de dinheiro dada ao segundo colocado (o penúltimo jogador que sobrou de pé).
-premio-penultimo: 15000.0
+premio-penultimo: 1000.0
 
 # Quantidade mínima de jogadores necessária para que o comando "/evento pvp iniciar" funcione.
-minimo-jogadores: 1
+minimo-jogadores: 2
 
 # Tempo de espera (em SEGUNDOS) após o anúncio do vencedor antes que todos os jogadores 
 # sejam teleportados de volta e o evento seja totalmente limpo/encerrado.
@@ -34,7 +34,7 @@ cronometro:
   batalha-com-tempo: true
 
   # Tempo máximo de duração da luta na arena (em SEGUNDOS) antes de forçar um empate.
-  duracao-maxima-batalha: 600
+  duracao-maxima-batalha: 6m00
 
   # Modo de exibição na ActionBar:
   # false = Mostra o tempo todo o cronômetro rodando desde o início da luta.
@@ -43,6 +43,30 @@ cronometro:
 
   # Define a partir de quantos SEGUNDOS restantes o cronômetro é considerado "quase esgotando".
   segundos-aviso-final: 10
+
+# ==========================================================
+#                MENUS DE AJUDA TOTALMENTE EDITÁVEIS
+# ==========================================================
+ajuda:
+  usuario:
+    - "&6============= &e&lMENU DE AJUDA: EVENTO PVP &6============="
+    - "&e/evento pvp entrar &7- Participar do evento aberto."
+    - "&e/evento pvp sair &7- Sair do evento e voltar ao ponto anterior."
+    - "&6===================================================="
+  admin:
+    - "&6============= &e&lMENU DE AJUDA: EVENTO PVP (ADMIN) &6============="
+    - "&e/evento pvp entrar &7- Participar do evento aberto."
+    - "&e/evento pvp sair &7- Sair do evento e voltar ao ponto anterior."
+    - "&c/evento pvp abrir &7- Abre as inscrições do evento pvp."
+    - "&c/evento pvp iniciar &7- Teleporta e inicia os contadores de luta."
+    - "&c/evento pvp fechar &7- Força a finalização imediata do evento."
+    - "&c/evento pvp setspawn <id> &7- Cria um ponto de nascimento."
+    - "&c/evento pvp editspawn <id> &7- Edita um ponto de nascimento existente."
+    - "&c/evento pvp delspawn <id> &7- Remove um ponto de nascimento."
+    - "&c/evento pvp definirkit &7- Salva seu inventário como o kit de luta."
+    - "&c/evento pvp efeito <add/remove/limpar/lista> &7- Gerencia poções."
+    - "&c/evento pvp recarregar &7- Atualiza as variáveis da config.yml."
+    - "&6===================================================="
 
 # ==========================================================
 #                  DEMAIS CONFIGURAÇÕES
@@ -72,6 +96,9 @@ mensagens:
   efeito-invalido: "&cNome de efeito inválido do Minecraft. Use nomes como SPEED, JUMP_BOOST, etc."
   efeitos-limpos: "&aTodos os efeitos da arena foram removidos."
   spawn-setado: "&aSpawn administrativo de número &e%num%&a configurado com sucesso!"
+  spawn-editado: "&aSpawn administrativo de número &e%num%&a atualizado com sucesso!"
+  spawn-deletado: "&aSpawn administrativo de número &e%num%&a removido com sucesso!"
+  spawn-nao-encontrado: "&cO spawn de número %num% não existe nas configurações."
   spawn-erro-numero: "&cPor favor, especifique um número de índice válido para o spawn."
 
 broadcasts:

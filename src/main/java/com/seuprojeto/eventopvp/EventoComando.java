@@ -66,7 +66,6 @@ public class EventoComando implements CommandExecutor, TabCompleter {
 
             p.sendMessage(plugin.getMsg("mensagens.entrou-no-evento"));
 
-            // Broadcast global de entrada adicionado aqui:
             String msgEntrada = plugin.getConfig().getString("broadcasts.jogador-entrou-evento", "").replace("%player%", p.getName());
             if (!msgEntrada.isEmpty()) {
                 Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgEntrada));
@@ -108,7 +107,6 @@ public class EventoComando implements CommandExecutor, TabCompleter {
 
             p.sendMessage(plugin.getMsg("mensagens.saiu-do-evento"));
 
-            // Broadcast global de saída adicionado aqui:
             String msgSaida = plugin.getConfig().getString("broadcasts.jogador-saiu-evento", "").replace("%player%", p.getName());
             if (!msgSaida.isEmpty()) {
                 Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgSaida));
@@ -171,6 +169,60 @@ public class EventoComando implements CommandExecutor, TabCompleter {
             plugin.saveSpawnsConfig();
 
             p.sendMessage(plugin.getMsg("mensagens.spawn-setado").replaceText(b -> b.matchLiteral("%num%").replacement(numeroSpawn)));
+            return true;
+        }
+
+        // NOVO COMANDO: editspawn
+        if (sub.equals("editspawn")) {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(plugin.getMsg("mensagens.apenas-jogadores"));
+                return true;
+            }
+            if (args.length < 3) {
+                sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&cUse: /evento pvp editspawn <numero do spawn>"));
+                return true;
+            }
+
+            Player p = (Player) sender;
+            String numeroSpawn = args[2];
+
+            if (plugin.getSpawnsConfig().get("spawns." + numeroSpawn) == null) {
+                p.sendMessage(plugin.getMsg("mensagens.spawn-nao-encontrado").replaceText(b -> b.matchLiteral("%num%").replacement(numeroSpawn)));
+                return true;
+            }
+
+            Location loc = p.getLocation();
+            String path = "spawns." + numeroSpawn;
+            plugin.getSpawnsConfig().set(path + ".world", loc.getWorld().getName());
+            plugin.getSpawnsConfig().set(path + ".x", loc.getX());
+            plugin.getSpawnsConfig().set(path + ".y", loc.getY());
+            plugin.getSpawnsConfig().set(path + ".z", loc.getZ());
+            plugin.getSpawnsConfig().set(path + ".yaw", loc.getYaw());
+            plugin.getSpawnsConfig().set(path + ".pitch", loc.getPitch());
+            plugin.saveSpawnsConfig();
+
+            p.sendMessage(plugin.getMsg("mensagens.spawn-editado").replaceText(b -> b.matchLiteral("%num%").replacement(numeroSpawn)));
+            return true;
+        }
+
+        // NOVO COMANDO: delspawn
+        if (sub.equals("delspawn")) {
+            if (args.length < 3) {
+                sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&cUse: /evento pvp delspawn <numero do spawn>"));
+                return true;
+            }
+
+            String numeroSpawn = args[2];
+
+            if (plugin.getSpawnsConfig().get("spawns." + numeroSpawn) == null) {
+                sender.sendMessage(plugin.getMsg("mensagens.spawn-nao-encontrado").replaceText(b -> b.matchLiteral("%num%").replacement(numeroSpawn)));
+                return true;
+            }
+
+            plugin.getSpawnsConfig().set("spawns." + numeroSpawn, null);
+            plugin.saveSpawnsConfig();
+
+            sender.sendMessage(plugin.getMsg("mensagens.spawn-deletado").replaceText(b -> b.matchLiteral("%num%").replacement(numeroSpawn)));
             return true;
         }
 
@@ -349,21 +401,19 @@ public class EventoComando implements CommandExecutor, TabCompleter {
         return split.length > 1 ? split[1] : "0";
     }
 
+    // MODIFICADO: Agora carrega o menu de ajuda de forma 100% dinâmica através da config.yml
     private void exibirMenuAjuda(CommandSender sender) {
-        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&r"));
-        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&6============= &e&lMENU DE AJUDA: EVENTO PVP &6============="));
-        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&e/evento pvp entrar &7- Participar do evento aberto."));
-        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&e/evento pvp sair &7- Sair do evento e voltar ao ponto anterior."));
-        if (sender.hasPermission("eventopvp.admin")) {
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp abrir &7- Abre as inscrições do evento pvp."));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp iniciar &7- Teleporta e inicia os contadores de luta."));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp fechar &7- Força a finalização imediata do evento."));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp setspawn <id> &7- Cria um ponto de nascimento na sua posição."));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp definirkit &7- Salva seu inventário atual como o kit de luta."));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp efeito <add/remove/limpar/lista> &7- Gerencia poções."));
-            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&c/evento pvp recarregar &7- Atualiza as variáveis da config.yml."));
+        String path = (sender.hasPermission("eventopvp.admin")) ? "ajuda.admin" : "ajuda.usuario";
+        List<String> linhasAjuda = plugin.getConfig().getStringList(path);
+        
+        if (linhasAjuda.isEmpty()) {
+            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&cO menu de ajuda não foi configurado na config.yml."));
+            return;
         }
-        sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&6===================================================="));
+        
+        for (String linha : linhasAjuda) {
+            sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(linha));
+        }
     }
 
     @Override
@@ -374,11 +424,16 @@ public class EventoComando implements CommandExecutor, TabCompleter {
         if (args.length == 2 && args[0].equalsIgnoreCase("pvp")) {
             List<String> subComandos = new ArrayList<>(Arrays.asList("entrar", "sair", "ajuda", "help"));
             if (sender.hasPermission("eventopvp.admin")) {
-                subComandos.addAll(Arrays.asList("abrir", "iniciar", "fechar", "definirkit", "recarregar", "efeito", "setspawn"));
+                // Adicionado "editspawn" e "delspawn" à lista de sugestões automáticas
+                subComandos.addAll(Arrays.asList("abrir", "iniciar", "fechar", "definirkit", "recarregar", "efeito", "setspawn", "editspawn", "delspawn"));
             }
             return subComandos.stream().filter(s -> s.startsWith(args[1].toLowerCase())).collect(Collectors.toList());
         }
-        if (args.length == 3 && args[1].equalsIgnoreCase("setspawn") && sender.hasPermission("eventopvp.admin")) {
+        // Retorna sugestões dinâmicas baseadas nos IDs de spawns já salvos para "editspawn" e "delspawn"
+        if (args.length == 3 && (args[1].equalsIgnoreCase("setspawn") || args[1].equalsIgnoreCase("editspawn") || args[1].equalsIgnoreCase("delspawn")) && sender.hasPermission("eventopvp.admin")) {
+            if (plugin.getSpawnsConfig().getConfigurationSection("spawns") != null) {
+                return new ArrayList<>(plugin.getSpawnsConfig().getConfigurationSection("spawns").getKeys(false));
+            }
             return Arrays.asList("1", "2", "3", "4", "5");
         }
         if (args.length == 3 && args[1].equalsIgnoreCase("efeito") && sender.hasPermission("eventopvp.admin")) {
