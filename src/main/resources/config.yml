@@ -34,7 +34,7 @@ cronometro:
   batalha-com-tempo: true
 
   # Tempo máximo de duração da luta na arena (em SEGUNDOS) antes de forçar um empate.
-  duracao-maxima-batalha: 6m00
+  duracao-maxima-batalha: 600
 
   # Modo de exibição na ActionBar:
   # false = Mostra o tempo todo o cronômetro rodando desde o início da luta.
