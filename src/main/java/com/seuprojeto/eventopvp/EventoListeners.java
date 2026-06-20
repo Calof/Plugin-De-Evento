@@ -6,7 +6,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.potion.PotionEffect;
 
@@ -34,9 +33,13 @@ public class EventoListeners implements Listener {
             vitima.setFoodLevel(20);
             vitima.setFireTicks(0);
 
-            // Uso do loop tradicional for para evitar erros de compilação
             for (PotionEffect effect : vitima.getActivePotionEffects()) {
                 vitima.removePotionEffect(effect.getType());
+            }
+
+            // Intercepta quando restam apenas 2 jogadores para definir o segundo colocado
+            if (plugin.vivos.size() == 2) {
+                plugin.penultimoUUID = vitima.getUniqueId();
             }
 
             plugin.vivos.remove(vitima.getUniqueId());
@@ -58,20 +61,18 @@ public class EventoListeners implements Listener {
        
         if (plugin.participantes.contains(p.getUniqueId())) {
             plugin.participantes.remove(p.getUniqueId());
+            
+            if (plugin.vivos.size() == 2 && plugin.vivos.contains(p.getUniqueId())) {
+                plugin.penultimoUUID = p.getUniqueId();
+            }
+            
             boolean estavaVivo = plugin.vivos.remove(p.getUniqueId());
-           
             p.getInventory().clear();
-           
             plugin.localAnterior.remove(p.getUniqueId());
 
             if (plugin.iniciado && estavaVivo) {
                 plugin.verificarVencedor();
             }
         }
-    }
-
-    @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
-        // Método totalmente limpo. O plugin não interfere em nada quando o jogador entra.
     }
 }

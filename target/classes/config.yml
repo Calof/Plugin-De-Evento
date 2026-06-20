@@ -1,34 +1,50 @@
 # ==========================================================
-#                  CONFIGURAÇÃO DO EVENTOPVP (PADRONIZADO)
+#                  CONFIGURAÇÃO DO EVENTOPVP
 # ==========================================================
 
-premio: 0.0
+premio: 50000.0
+premio-penultimo: 15000.0
 minimo-jogadores: 2
-tempo-espera-vencedor: 15
+tempo-espera-vencedor: 5
+
+# Lista de efeitos dinâmicos salvos pelo comando administrativo
+efeitos-arena:
+  - "SPEED:0"
+  - "INCREASE_DAMAGE:0"
 
 mensagens:
+  comando-invalido: "&cComando não reconhecido. Use /evento pvp ajuda para ver os comandos."
   sem-permissao: "&cVocê não tem permissão para usar este comando."
   apenas-jogadores: "&cApenas jogadores podem executar esta ação."
   evento-fechado: "&cNão há evento aberto no momento."
   evento-ja-iniciado: "&cO evento já começou, você não pode mais entrar."
   ja-esta-no-evento: "&cVocê já está participando do evento."
   ja-participou: "&cVocê já usou sua chance nesta edição do evento e não pode reentrar."
-  entrou-no-evento: "&aVocê entrou no evento com sucesso! Lembre-se: você pode digitar &e/evento sair &aa qualquer momento para desistir."
+  entrou-no-evento: "&aVocê entrou no evento com sucesso! Use &e/evento pvp sair &apara desistir."
   saiu-do-evento: "&aVocê saiu do evento e foi enviado de volta ao seu local original."
   na-lista-de-evento: "&cVocê não está participando de nenhum evento."
   eliminado: "&cVocê foi eliminado do evento!"
   plugin-recarregado: "&aConfiguração do EventoPvP recarregada com sucesso!"
-  jogadores-insuficientes: "&cO evento não pode ser iniciado com apenas %atual% jogador(es). É necessário o mínimo de %min% jogadores para haver combate."
-  kit-definido: "&aO kit do evento foi definido com sucesso com os itens do seu inventário!"
+  jogadores-insuficientes: "&cO evento não pode ser iniciado com apenas %atual% jogador(es). É necessário o mínimo de %min% jogadores."
+  kit-definido: "&aO kit do evento foi definido com sucesso!"
+  
+  # Mensagens administrativas do gerenciador de poções
+  efeito-adicionado: "&aEfeito &e%effect%&a adicionado com sucesso para a arena!"
+  efeito-removido: "&aEfeito &e%effect%&a removido da arena."
+  efeito-nao-encontrado: "&cEsse efeito não está na lista da arena."
+  efeito-invalido: "&cNome de efeito inválido do Minecraft. Use nomes como SPEED, JUMP_BOOST, etc."
+  efeitos-limpos: "&aTodos os efeitos da arena foram removidos."
 
 broadcasts:
-  evento-aberto: "&aEvento PvP aberto! Digite &e/evento entrar &apara participar."
+  evento-aberto: "&aEvento PvP aberto! Digite &e/evento pvp entrar &apara participar."
   batalha-comecou: "&cA batalha começou na arena! Que vença o melhor."
   evento-encerrado: "&cO evento foi encerrado por um administrador."
   vencedor: "&6%player% venceu o Evento PvP!"
+  penultimo: "&e%player% ficou em segundo lugar (penúltimo de pé) e garantiu uma recompensa!"
 
 comandos:
   lobby: "warp evento_lobby %player%"
   arena: "warp evento_arena %player%"
   spec: "warp evento_spec %player%"
   dar-premio: "eco give %player% %premio%"
+  dar-premio-penultimo: "eco give %player% %premio%"

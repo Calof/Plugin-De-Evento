@@ -1,8 +1,8 @@
 name: EventoPvP
-version: 1.2
+version: 1.3
 main: com.seuprojeto.eventopvp.EventoPvP
 api-version: '1.21'
 commands:
   evento:
-    description: Comando central do evento PvP.
+    description: Comando central de eventos.
     permission: evento.player
