@@ -1,5 +1,6 @@
 package com.seuprojeto.eventopvp;
 
+import com.seuprojeto.eventopvp.manager.EventoManager;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -27,6 +28,8 @@ public class EventoComando implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        EventoManager manager = plugin.getEventoManager();
+
         if (args.length < 2 || !args[0].equalsIgnoreCase("pvp") || args[1].equalsIgnoreCase("ajuda") || args[1].equalsIgnoreCase("help")) {
             exibirMenuAjuda(sender);
             return true;
@@ -41,28 +44,28 @@ public class EventoComando implements CommandExecutor, TabCompleter {
             }
             Player p = (Player) sender;
 
-            if (!plugin.aberto) {
+            if (!manager.aberto) {
                 p.sendMessage(plugin.getMsg("mensagens.evento-fechado"));
                 return true;
             }
-            if (plugin.iniciado) {
+            if (manager.iniciado) {
                 p.sendMessage(plugin.getMsg("mensagens.evento-ja-iniciado"));
                 return true;
             }
-            if (plugin.participantes.contains(p.getUniqueId())) {
+            if (manager.participantes.contains(p.getUniqueId())) {
                 p.sendMessage(plugin.getMsg("mensagens.ja-esta-no-evento"));
                 return true;
             }
-            if (plugin.jaEntraram.contains(p.getUniqueId())) {
+            if (manager.jaEntraram.contains(p.getUniqueId())) {
                 p.sendMessage(plugin.getMsg("mensagens.ja-participou"));
                 return true;
             }
 
-            plugin.participantes.add(p.getUniqueId());
-            plugin.jaEntraram.add(p.getUniqueId());
-            plugin.localAnterior.put(p.getUniqueId(), p.getLocation());
-            plugin.getJogadoresConfig().set(p.getUniqueId().toString(), true);
-            plugin.saveJogadoresConfig();
+            manager.participantes.add(p.getUniqueId());
+            manager.jaEntraram.add(p.getUniqueId());
+            manager.localAnterior.put(p.getUniqueId(), p.getLocation());
+            plugin.getConfigManager().getJogadoresConfig().set(p.getUniqueId().toString(), true);
+            plugin.getConfigManager().saveJogadoresConfig();
 
             p.sendMessage(plugin.getMsg("mensagens.entrou-no-evento"));
 
@@ -85,25 +88,25 @@ public class EventoComando implements CommandExecutor, TabCompleter {
             }
             Player p = (Player) sender;
 
-            if (!plugin.participantes.contains(p.getUniqueId())) {
+            if (!manager.participantes.contains(p.getUniqueId())) {
                 p.sendMessage(plugin.getMsg("mensagens.na-lista-de-evento"));
                 return true;
             }
 
-            plugin.participantes.remove(p.getUniqueId());
-            if (plugin.vivos.size() == 2 && plugin.vivos.contains(p.getUniqueId())) {
-                plugin.penultimoUUID = p.getUniqueId();
+            manager.participantes.remove(p.getUniqueId());
+            if (manager.vivos.size() == 2 && manager.vivos.contains(p.getUniqueId())) {
+                manager.penultimoUUID = p.getUniqueId();
             }
-            boolean estavaVivo = plugin.vivos.remove(p.getUniqueId());
+            boolean estavaVivo = manager.vivos.remove(p.getUniqueId());
             
             p.getInventory().clear();
             p.getActivePotionEffects().forEach(effect -> p.removePotionEffect(effect.getType()));
 
-            org.bukkit.Location backLoc = plugin.localAnterior.remove(p.getUniqueId());
+            org.bukkit.Location backLoc = manager.localAnterior.remove(p.getUniqueId());
             if (backLoc != null) p.teleport(backLoc);
 
-            plugin.getJogadoresConfig().set(p.getUniqueId().toString(), null);
-            plugin.saveJogadoresConfig();
+            plugin.getConfigManager().getJogadoresConfig().set(p.getUniqueId().toString(), null);
+            plugin.getConfigManager().saveJogadoresConfig();
 
             p.sendMessage(plugin.getMsg("mensagens.saiu-do-evento"));
 
@@ -112,27 +115,26 @@ public class EventoComando implements CommandExecutor, TabCompleter {
                 Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgSaida));
             }
 
-            if (plugin.iniciado && estavaVivo) {
-                plugin.verificarVencedor();
+            if (manager.iniciado && estavaVivo) {
+                manager.verificarVencedor();
             }
             return true;
         }
 
-        // --- COMANDOS ADMINISTRATIVOS ---
         if (!sender.hasPermission("eventopvp.admin")) {
             sender.sendMessage(plugin.getMsg("mensagens.sem-permissao"));
             return true;
         }
 
         if (sub.equals("abrir")) {
-            plugin.aberto = true;
-            plugin.iniciado = false;
-            plugin.participantes.clear();
-            plugin.vivos.clear();
-            plugin.jaEntraram.clear();
-            plugin.localAnterior.clear();
-            plugin.penultimoUUID = null;
-            plugin.pvpLiberado = false;
+            manager.aberto = true;
+            manager.iniciado = false;
+            manager.participantes.clear();
+            manager.vivos.clear();
+            manager.jaEntraram.clear();
+            manager.localAnterior.clear();
+            manager.penultimoUUID = null;
+            manager.pvpLiberado = false;
 
             Bukkit.broadcast(plugin.getMsg("broadcasts.evento-aberto"));
             return true;
@@ -160,19 +162,18 @@ public class EventoComando implements CommandExecutor, TabCompleter {
 
             Location loc = p.getLocation();
             String path = "spawns." + numeroSpawn;
-            plugin.getSpawnsConfig().set(path + ".world", loc.getWorld().getName());
-            plugin.getSpawnsConfig().set(path + ".x", loc.getX());
-            plugin.getSpawnsConfig().set(path + ".y", loc.getY());
-            plugin.getSpawnsConfig().set(path + ".z", loc.getZ());
-            plugin.getSpawnsConfig().set(path + ".yaw", loc.getYaw());
-            plugin.getSpawnsConfig().set(path + ".pitch", loc.getPitch());
-            plugin.saveSpawnsConfig();
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".world", loc.getWorld().getName());
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".x", loc.getX());
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".y", loc.getY());
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".z", loc.getZ());
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".yaw", loc.getYaw());
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".pitch", loc.getPitch());
+            plugin.getConfigManager().saveSpawnsConfig();
 
             p.sendMessage(plugin.getMsg("mensagens.spawn-setado").replaceText(b -> b.matchLiteral("%num%").replacement(numeroSpawn)));
             return true;
         }
 
-        // NOVO COMANDO: editspawn
         if (sub.equals("editspawn")) {
             if (!(sender instanceof Player)) {
                 sender.sendMessage(plugin.getMsg("mensagens.apenas-jogadores"));
@@ -186,26 +187,25 @@ public class EventoComando implements CommandExecutor, TabCompleter {
             Player p = (Player) sender;
             String numeroSpawn = args[2];
 
-            if (plugin.getSpawnsConfig().get("spawns." + numeroSpawn) == null) {
+            if (plugin.getConfigManager().getSpawnsConfig().get("spawns." + numeroSpawn) == null) {
                 p.sendMessage(plugin.getMsg("mensagens.spawn-nao-encontrado").replaceText(b -> b.matchLiteral("%num%").replacement(numeroSpawn)));
                 return true;
             }
 
             Location loc = p.getLocation();
             String path = "spawns." + numeroSpawn;
-            plugin.getSpawnsConfig().set(path + ".world", loc.getWorld().getName());
-            plugin.getSpawnsConfig().set(path + ".x", loc.getX());
-            plugin.getSpawnsConfig().set(path + ".y", loc.getY());
-            plugin.getSpawnsConfig().set(path + ".z", loc.getZ());
-            plugin.getSpawnsConfig().set(path + ".yaw", loc.getYaw());
-            plugin.getSpawnsConfig().set(path + ".pitch", loc.getPitch());
-            plugin.saveSpawnsConfig();
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".world", loc.getWorld().getName());
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".x", loc.getX());
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".y", loc.getY());
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".z", loc.getZ());
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".yaw", loc.getYaw());
+            plugin.getConfigManager().getSpawnsConfig().set(path + ".pitch", loc.getPitch());
+            plugin.getConfigManager().saveSpawnsConfig();
 
             p.sendMessage(plugin.getMsg("mensagens.spawn-editado").replaceText(b -> b.matchLiteral("%num%").replacement(numeroSpawn)));
             return true;
         }
 
-        // NOVO COMANDO: delspawn
         if (sub.equals("delspawn")) {
             if (args.length < 3) {
                 sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize("&cUse: /evento pvp delspawn <numero do spawn>"));
@@ -214,13 +214,13 @@ public class EventoComando implements CommandExecutor, TabCompleter {
 
             String numeroSpawn = args[2];
 
-            if (plugin.getSpawnsConfig().get("spawns." + numeroSpawn) == null) {
+            if (plugin.getConfigManager().getSpawnsConfig().get("spawns." + numeroSpawn) == null) {
                 sender.sendMessage(plugin.getMsg("mensagens.spawn-nao-encontrado").replaceText(b -> b.matchLiteral("%num%").replacement(numeroSpawn)));
                 return true;
             }
 
-            plugin.getSpawnsConfig().set("spawns." + numeroSpawn, null);
-            plugin.saveSpawnsConfig();
+            plugin.getConfigManager().getSpawnsConfig().set("spawns." + numeroSpawn, null);
+            plugin.getConfigManager().saveSpawnsConfig();
 
             sender.sendMessage(plugin.getMsg("mensagens.spawn-deletado").replaceText(b -> b.matchLiteral("%num%").replacement(numeroSpawn)));
             return true;
@@ -228,21 +228,21 @@ public class EventoComando implements CommandExecutor, TabCompleter {
 
         if (sub.equals("iniciar")) {
             int minJogadores = plugin.getConfig().getInt("minimo-jogadores", 2);
-            if (plugin.participantes.size() < minJogadores) {
+            if (manager.participantes.size() < minJogadores) {
                 String msgErro = plugin.getConfig().getString("mensagens.jogadores-insuficientes", "")
                         .replace("%min%", String.valueOf(minJogadores))
-                        .replace("%atual%", String.valueOf(plugin.participantes.size()));
+                        .replace("%atual%", String.valueOf(manager.participantes.size()));
                 sender.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(msgErro));
                 return true;
             }
 
-            plugin.iniciado = true;
-            plugin.vivos.clear();
-            plugin.penultimoUUID = null;
+            manager.iniciado = true;
+            manager.vivos.clear();
+            manager.penultimoUUID = null;
 
             String cmdArenaRaw = plugin.getConfig().getString("comandos.arena", "");
 
-            List<?> itensRaw = plugin.getKitConfig().getList("inventario");
+            List<?> itensRaw = plugin.getConfigManager().getKitConfig().getList("inventario");
             List<ItemStack> itensKit = new ArrayList<>();
             if (itensRaw != null) {
                 for (Object obj : itensRaw) {
@@ -250,7 +250,7 @@ public class EventoComando implements CommandExecutor, TabCompleter {
                 }
             }
 
-            List<?> armaduraRaw = plugin.getKitConfig().getList("armadura");
+            List<?> armaduraRaw = plugin.getConfigManager().getKitConfig().getList("armadura");
             List<ItemStack> armaduraKit = new ArrayList<>();
             if (armaduraRaw != null) {
                 for (Object obj : armaduraRaw) {
@@ -259,25 +259,25 @@ public class EventoComando implements CommandExecutor, TabCompleter {
             }
 
             List<Location> listaSpawnsCustomizados = new ArrayList<>();
-            if (plugin.getSpawnsConfig().getConfigurationSection("spawns") != null) {
-                for (String key : plugin.getSpawnsConfig().getConfigurationSection("spawns").getKeys(false)) {
-                    String wName = plugin.getSpawnsConfig().getString("spawns." + key + ".world");
+            if (plugin.getConfigManager().getSpawnsConfig().getConfigurationSection("spawns") != null) {
+                for (String key : plugin.getConfigManager().getSpawnsConfig().getConfigurationSection("spawns").getKeys(false)) {
+                    String wName = plugin.getConfigManager().getSpawnsConfig().getString("spawns." + key + ".world");
                     if (wName != null && Bukkit.getWorld(wName) != null) {
-                        double x = plugin.getSpawnsConfig().getDouble("spawns." + key + ".x");
-                        double y = plugin.getSpawnsConfig().getDouble("spawns." + key + ".y");
-                        double z = plugin.getSpawnsConfig().getDouble("spawns." + key + ".z");
-                        float yaw = (float) plugin.getSpawnsConfig().getDouble("spawns." + key + ".yaw");
-                        float pitch = (float) plugin.getSpawnsConfig().getDouble("spawns." + key + ".pitch");
+                        double x = plugin.getConfigManager().getSpawnsConfig().getDouble("spawns." + key + ".x");
+                        double y = plugin.getConfigManager().getSpawnsConfig().getDouble("spawns." + key + ".y");
+                        double z = plugin.getConfigManager().getSpawnsConfig().getDouble("spawns." + key + ".z");
+                        float yaw = (float) plugin.getConfigManager().getSpawnsConfig().getDouble("spawns." + key + ".yaw");
+                        float pitch = (float) plugin.getConfigManager().getSpawnsConfig().getDouble("spawns." + key + ".pitch");
                         listaSpawnsCustomizados.add(new Location(Bukkit.getWorld(wName), x, y, z, yaw, pitch));
                     }
                 }
             }
 
             int indexSpawn = 0;
-            for (UUID uuid : plugin.participantes) {
+            for (UUID uuid : manager.participantes) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null) {
-                    plugin.vivos.add(uuid);
+                    manager.vivos.add(uuid);
                     p.getInventory().clear();
 
                     if (!listaSpawnsCustomizados.isEmpty()) {
@@ -297,24 +297,24 @@ public class EventoComando implements CommandExecutor, TabCompleter {
                     if (!itensKit.isEmpty()) p.getInventory().setContents(itensKit.toArray(new ItemStack[0]));
                     if (!armaduraKit.isEmpty()) p.getInventory().setArmorContents(armaduraKit.toArray(new ItemStack[0]));
                     
-                    plugin.aplicarEfeitosArena(p);
+                    manager.aplicarEfeitosArena(p);
                     p.updateInventory();
                 }
             }
             
             if (plugin.getConfig().getBoolean("preparacao.utilizar-preparacao", true)) {
-                plugin.iniciarContagemPreparacao();
+                manager.iniciarContagemPreparacao();
             } else {
-                plugin.pvpLiberado = true;
+                manager.pvpLiberado = true;
                 Bukkit.broadcast(plugin.getMsg("broadcasts.batalha-comecou"));
-                plugin.iniciarAgendadoresBatalha();
+                manager.iniciarAgendadoresBatalha();
             }
             return true;
         }
 
         if (sub.equals("fechar")) {
             Bukkit.broadcast(plugin.getMsg("broadcasts.evento-encerrado"));
-            plugin.encerrarEvento();
+            manager.encerrarEvento();
             return true;
         }
 
@@ -324,9 +324,9 @@ public class EventoComando implements CommandExecutor, TabCompleter {
                 return true;
             }
             Player p = (Player) sender;
-            plugin.getKitConfig().set("inventario", Arrays.asList(p.getInventory().getContents()));
-            plugin.getKitConfig().set("armadura", Arrays.asList(p.getInventory().getArmorContents()));
-            plugin.saveKitConfig();
+            plugin.getConfigManager().getKitConfig().set("inventario", Arrays.asList(p.getInventory().getContents()));
+            plugin.getConfigManager().getKitConfig().set("armadura", Arrays.asList(p.getInventory().getArmorContents()));
+            plugin.getConfigManager().saveKitConfig();
             p.sendMessage(plugin.getMsg("mensagens.kit-definido"));
             return true;
         }
@@ -384,7 +384,7 @@ public class EventoComando implements CommandExecutor, TabCompleter {
                 if (removido) {
                     plugin.getConfig().set("efeitos-arena", listaEfeitos);
                     plugin.saveConfig();
-                    sender.sendMessage(plugin.getMsg("mensagens.efeito-recorrente-removido").replaceText(b -> b.matchLiteral("%effect%").replacement(nomeEfeito)));
+                    sender.sendMessage(plugin.getMsg("mensagens.efeito-removido").replaceText(b -> b.matchLiteral("%effect%").replacement(nomeEfeito)));
                 } else {
                     sender.sendMessage(plugin.getMsg("mensagens.efeito-nao-encontrado"));
                 }
@@ -401,7 +401,6 @@ public class EventoComando implements CommandExecutor, TabCompleter {
         return split.length > 1 ? split[1] : "0";
     }
 
-    // MODIFICADO: Agora carrega o menu de ajuda de forma 100% dinâmica através da config.yml
     private void exibirMenuAjuda(CommandSender sender) {
         String path = (sender.hasPermission("eventopvp.admin")) ? "ajuda.admin" : "ajuda.usuario";
         List<String> linhasAjuda = plugin.getConfig().getStringList(path);
@@ -424,15 +423,13 @@ public class EventoComando implements CommandExecutor, TabCompleter {
         if (args.length == 2 && args[0].equalsIgnoreCase("pvp")) {
             List<String> subComandos = new ArrayList<>(Arrays.asList("entrar", "sair", "ajuda", "help"));
             if (sender.hasPermission("eventopvp.admin")) {
-                // Adicionado "editspawn" e "delspawn" à lista de sugestões automáticas
                 subComandos.addAll(Arrays.asList("abrir", "iniciar", "fechar", "definirkit", "recarregar", "efeito", "setspawn", "editspawn", "delspawn"));
             }
             return subComandos.stream().filter(s -> s.startsWith(args[1].toLowerCase())).collect(Collectors.toList());
         }
-        // Retorna sugestões dinâmicas baseadas nos IDs de spawns já salvos para "editspawn" e "delspawn"
         if (args.length == 3 && (args[1].equalsIgnoreCase("setspawn") || args[1].equalsIgnoreCase("editspawn") || args[1].equalsIgnoreCase("delspawn")) && sender.hasPermission("eventopvp.admin")) {
-            if (plugin.getSpawnsConfig().getConfigurationSection("spawns") != null) {
-                return new ArrayList<>(plugin.getSpawnsConfig().getConfigurationSection("spawns").getKeys(false));
+            if (plugin.getConfigManager().getSpawnsConfig().getConfigurationSection("spawns") != null) {
+                return new ArrayList<>(plugin.getConfigManager().getSpawnsConfig().getConfigurationSection("spawns").getKeys(false));
             }
             return Arrays.asList("1", "2", "3", "4", "5");
         }

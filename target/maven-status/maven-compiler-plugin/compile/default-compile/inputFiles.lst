@@ -1,3 +1,9 @@
+/workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/manager/ConfigManager.java
 /workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/EventoPvP.java
+/workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/util/EfeitosVisuais.java
 /workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/EventoComando.java
+/workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/task/PreparacaoTask.java
+/workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/task/BatalhaTimerTask.java
+/workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/task/FimEventoTask.java
+/workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/manager/EventoManager.java
 /workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/EventoListeners.java

@@ -1,7 +1,10 @@
-com/seuprojeto/eventopvp/EventoPvP$4.class
+com/seuprojeto/eventopvp/task/FimEventoTask.class
+com/seuprojeto/eventopvp/manager/ConfigManager.class
+com/seuprojeto/eventopvp/task/BatalhaTimerTask.class
+com/seuprojeto/eventopvp/util/EfeitosVisuais$1.class
 com/seuprojeto/eventopvp/EventoComando.class
-com/seuprojeto/eventopvp/EventoPvP$2.class
-com/seuprojeto/eventopvp/EventoPvP$3.class
+com/seuprojeto/eventopvp/task/PreparacaoTask.class
+com/seuprojeto/eventopvp/util/EfeitosVisuais.class
 com/seuprojeto/eventopvp/EventoPvP.class
-com/seuprojeto/eventopvp/EventoPvP$1.class
+com/seuprojeto/eventopvp/manager/EventoManager.class
 com/seuprojeto/eventopvp/EventoListeners.class

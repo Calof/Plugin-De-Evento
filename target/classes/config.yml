@@ -2,18 +2,9 @@
 #             PREMIAÇÕES E REGRAS DA ARENA
 # ==========================================================
 
-# Quantia de dinheiro que o grande vencedor do evento receberá.
-# NOTA: Em caso de empate por tempo, este valor será dividido igualmente entre os sobreviventes!
 premio: 15000.0
-
-# Quantia de dinheiro dada ao segundo colocado (o penúltimo jogador que sobrou de pé).
 premio-penultimo: 1000.0
-
-# Quantidade mínima de jogadores necessária para que o comando "/evento pvp iniciar" funcione.
 minimo-jogadores: 2
-
-# Tempo de espera (em SEGUNDOS) após o anúncio do vencedor antes que todos os jogadores 
-# sejam teleportados de volta e o evento seja totalmente limpo/encerrado.
 tempo-espera-vencedor: 30
 
 # ==========================================================
@@ -37,12 +28,12 @@ cronometro:
 # ==========================================================
 ajuda:
   usuario:
-    - "&6============= &e&lMENU DE AJUDA: EVENTO PVP &6============="
+    - "&e&lMENU DE AJUDA: EVENTO PVP &6========================"
     - "&e/evento pvp entrar &7- Participar do evento aberto."
     - "&e/evento pvp sair &7- Sair do evento e voltar ao ponto anterior."
     - "&6===================================================="
   admin:
-    - "&e&lMENU DE AJUDA: EVENTO PVP (ADMIN) &6=================="
+    - "&e&lMENU DE AJUDA: EVENTO PVP (ADMIN) &6================"
     - "&e/evento pvp entrar &7- Participar do evento aberto."
     - "&e/evento pvp sair &7- Sair do evento e voltar ao ponto anterior."
     - "&c/evento pvp abrir &7- Abre as inscrições do evento pvp."
@@ -97,7 +88,7 @@ broadcasts:
   empate-recompensa: "&aCada sobrevivente recebeu uma fração de &e$%quantia%&a pelo empate!"
   jogador-entrou-evento: "&7[&a+&7] &e%player% &7entrou no evento!"
   jogador-saiu-evento: "&7[&c-&7] &e%player% &7saiu do evento."
-  abate-simples: "&c%vitima% &7foi dropado por &a%atacante%&7!"
+  abate-simples: "&c%vitima% &7foi derrotado(a) por &a%atacante%&7!"
   killstreak: "&6&lKILLS! &e%player% &7está imbativel com uma killstreak de &c%kills%&7!"
 
 comandos:

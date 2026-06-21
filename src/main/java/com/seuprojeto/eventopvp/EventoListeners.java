@@ -1,5 +1,6 @@
 package com.seuprojeto.eventopvp;
 
+import com.seuprojeto.eventopvp.manager.EventoManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -29,10 +30,11 @@ public class EventoListeners implements Listener {
     public void onPlayerDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player)) return;
         Player vitima = (Player) event.getEntity();
+        EventoManager manager = plugin.getEventoManager();
 
-        if (!plugin.vivos.contains(vitima.getUniqueId())) return;
+        if (!manager.vivos.contains(vitima.getUniqueId())) return;
 
-        if (!plugin.pvpLiberado) {
+        if (!manager.pvpLiberado) {
             event.setCancelled(true);
             return;
         }
@@ -40,7 +42,6 @@ public class EventoListeners implements Listener {
         if (vitima.getHealth() - event.getFinalDamage() <= 0) {
             event.setCancelled(true);
 
-            // Identificar se houve um atacante direto para as mensagens de abate
             Player killer = null;
             if (vitima.getLastDamageCause() instanceof EntityDamageByEntityEvent) {
                 EntityDamageByEntityEvent edbe = (EntityDamageByEntityEvent) vitima.getLastDamageCause();
@@ -54,14 +55,14 @@ public class EventoListeners implements Listener {
                 }
             }
 
-            if (killer != null && plugin.vivos.contains(killer.getUniqueId())) {
+            if (killer != null && manager.vivos.contains(killer.getUniqueId())) {
                 String msgAbate = plugin.getConfig().getString("broadcasts.abate-simples", "")
                         .replace("%vitima%", vitima.getName())
                         .replace("%atacante%", killer.getName());
                 Bukkit.broadcast(LegacyComponentSerializer.legacyAmpersand().deserialize(msgAbate));
 
-                int streakAtual = plugin.killstreak.getOrDefault(killer.getUniqueId(), 0) + 1;
-                plugin.killstreak.put(killer.getUniqueId(), streakAtual);
+                int streakAtual = manager.killstreak.getOrDefault(killer.getUniqueId(), 0) + 1;
+                manager.killstreak.put(killer.getUniqueId(), streakAtual);
 
                 if (streakAtual % 3 == 0) {
                     String msgStreak = plugin.getConfig().getString("broadcasts.killstreak", "")
@@ -71,7 +72,7 @@ public class EventoListeners implements Listener {
                 }
             }
 
-            plugin.killstreak.remove(vitima.getUniqueId());
+            manager.killstreak.remove(vitima.getUniqueId());
 
             if (vitima.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
                 vitima.setHealth(vitima.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
@@ -83,11 +84,11 @@ public class EventoListeners implements Listener {
                 vitima.removePotionEffect(effect.getType());
             }
 
-            if (plugin.vivos.size() == 2) {
-                plugin.penultimoUUID = vitima.getUniqueId();
+            if (manager.vivos.size() == 2) {
+                manager.penultimoUUID = vitima.getUniqueId();
             }
 
-            plugin.vivos.remove(vitima.getUniqueId());
+            manager.vivos.remove(vitima.getUniqueId());
             vitima.getInventory().clear();
             vitima.sendMessage(plugin.getMsg("mensagens.eliminado"));
 
@@ -96,7 +97,7 @@ public class EventoListeners implements Listener {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdSpecRaw.replace("%player%", vitima.getName()));
             }
 
-            plugin.verificarVencedor();
+            manager.verificarVencedor();
         }
     }
 
@@ -104,10 +105,11 @@ public class EventoListeners implements Listener {
     public void onPvPHit(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player)) return;
         Player vitima = (Player) event.getEntity();
+        EventoManager manager = plugin.getEventoManager();
 
-        if (!plugin.vivos.contains(vitima.getUniqueId())) return;
+        if (!manager.vivos.contains(vitima.getUniqueId())) return;
 
-        if (!plugin.pvpLiberado) {
+        if (!manager.pvpLiberado) {
             event.setCancelled(true);
             return;
         }
@@ -153,7 +155,8 @@ public class EventoListeners implements Listener {
     @EventHandler
     public void onPlayerMoveBeforeStart(PlayerMoveEvent event) {
         Player p = event.getPlayer();
-        if (plugin.iniciado && !plugin.pvpLiberado && plugin.vivos.contains(p.getUniqueId())) {
+        EventoManager manager = plugin.getEventoManager();
+        if (manager.iniciado && !manager.pvpLiberado && manager.vivos.contains(p.getUniqueId())) {
             Location from = event.getFrom();
             Location to = event.getTo();
             if (from.getX() != to.getX() || from.getZ() != to.getZ()) {
@@ -168,21 +171,22 @@ public class EventoListeners implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         Player p = event.getPlayer();
+        EventoManager manager = plugin.getEventoManager();
        
-        if (plugin.participantes.contains(p.getUniqueId())) {
-            plugin.participantes.remove(p.getUniqueId());
-            plugin.killstreak.remove(p.getUniqueId());
+        if (manager.participantes.contains(p.getUniqueId())) {
+            manager.participantes.remove(p.getUniqueId());
+            manager.killstreak.remove(p.getUniqueId());
             
-            if (plugin.vivos.size() == 2 && plugin.vivos.contains(p.getUniqueId())) {
-                plugin.penultimoUUID = p.getUniqueId();
+            if (manager.vivos.size() == 2 && manager.vivos.contains(p.getUniqueId())) {
+                manager.penultimoUUID = p.getUniqueId();
             }
             
-            boolean estavaVivo = plugin.vivos.remove(p.getUniqueId());
+            boolean estavaVivo = manager.vivos.remove(p.getUniqueId());
             p.getInventory().clear();
-            plugin.localAnterior.remove(p.getUniqueId());
+            manager.localAnterior.remove(p.getUniqueId());
 
-            if (plugin.iniciado && estavaVivo) {
-                plugin.verificarVencedor();
+            if (manager.iniciado && estavaVivo) {
+                manager.verificarVencedor();
             }
         }
     }
