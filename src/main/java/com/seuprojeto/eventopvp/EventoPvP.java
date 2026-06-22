@@ -1,7 +1,9 @@
 package com.seuprojeto.eventopvp;
 
+// IMPORTANTE: Use exatamente o mesmo início que já funcionava antes!
 import com.seuprojeto.eventopvp.manager.ConfigManager;
 import com.seuprojeto.eventopvp.manager.EventoManager;
+import com.seuprojeto.eventopvp.manager.KitManager; // <--- Verifique se a pasta é esta
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -10,6 +12,7 @@ public class EventoPvP extends JavaPlugin {
 
     private ConfigManager configManager;
     private EventoManager eventoManager;
+    private KitManager kitManager; 
 
     @Override
     public void onEnable() {
@@ -17,6 +20,7 @@ public class EventoPvP extends JavaPlugin {
         
         this.configManager = new ConfigManager(this);
         this.eventoManager = new EventoManager(this);
+        this.kitManager = new KitManager(this); // <--- Inicialização
 
         EventoComando cmdExecutor = new EventoComando(this);
         getCommand("evento").setExecutor(cmdExecutor);
@@ -24,7 +28,7 @@ public class EventoPvP extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new EventoListeners(this), this);
 
-        getLogger().info("Plugin EventoPvP Inicializado e Modularizado com Sucesso!");
+        getLogger().info("Plugin EventoPvP Inicializado com Sucesso!");
     }
 
     @Override
@@ -45,5 +49,10 @@ public class EventoPvP extends JavaPlugin {
 
     public EventoManager getEventoManager() {
         return eventoManager;
+    }
+
+    // O comando vai precisar deste método para encontrar o KitManager
+    public KitManager getKitManager() {
+        return kitManager;
     }
 }

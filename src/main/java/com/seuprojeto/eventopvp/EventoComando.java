@@ -9,7 +9,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayList;
@@ -242,22 +241,6 @@ public class EventoComando implements CommandExecutor, TabCompleter {
 
             String cmdArenaRaw = plugin.getConfig().getString("comandos.arena", "");
 
-            List<?> itensRaw = plugin.getConfigManager().getKitConfig().getList("inventario");
-            List<ItemStack> itensKit = new ArrayList<>();
-            if (itensRaw != null) {
-                for (Object obj : itensRaw) {
-                    if (obj instanceof ItemStack) itensKit.add((ItemStack) obj);
-                }
-            }
-
-            List<?> armaduraRaw = plugin.getConfigManager().getKitConfig().getList("armadura");
-            List<ItemStack> armaduraKit = new ArrayList<>();
-            if (armaduraRaw != null) {
-                for (Object obj : armaduraRaw) {
-                    if (obj instanceof ItemStack) armaduraKit.add((ItemStack) obj);
-                }
-            }
-
             List<Location> listaSpawnsCustomizados = new ArrayList<>();
             if (plugin.getConfigManager().getSpawnsConfig().getConfigurationSection("spawns") != null) {
                 for (String key : plugin.getConfigManager().getSpawnsConfig().getConfigurationSection("spawns").getKeys(false)) {
@@ -278,7 +261,6 @@ public class EventoComando implements CommandExecutor, TabCompleter {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null) {
                     manager.vivos.add(uuid);
-                    p.getInventory().clear();
 
                     if (!listaSpawnsCustomizados.isEmpty()) {
                         Location destino = listaSpawnsCustomizados.get(indexSpawn % listaSpawnsCustomizados.size());
@@ -294,11 +276,11 @@ public class EventoComando implements CommandExecutor, TabCompleter {
                         p.teleport(locAtual.add(randX, 0, randZ));
                     }
 
-                    if (!itensKit.isEmpty()) p.getInventory().setContents(itensKit.toArray(new ItemStack[0]));
-                    if (!armaduraKit.isEmpty()) p.getInventory().setArmorContents(armaduraKit.toArray(new ItemStack[0]));
+                    // JUSTIFICATIVA: A lógica pesada e poluída de varrer objetos brutos e convertê-los em 
+                    // Arrays de ItemStack foi completamente movida para o KitManager de forma modularizada e limpa.
+                    plugin.getKitManager().aplicarKitNoJogador(p);
                     
                     manager.aplicarEfeitosArena(p);
-                    p.updateInventory();
                 }
             }
             
@@ -324,9 +306,10 @@ public class EventoComando implements CommandExecutor, TabCompleter {
                 return true;
             }
             Player p = (Player) sender;
-            plugin.getConfigManager().getKitConfig().set("inventario", Arrays.asList(p.getInventory().getContents()));
-            plugin.getConfigManager().getKitConfig().set("armadura", Arrays.asList(p.getInventory().getArmorContents()));
-            plugin.getConfigManager().saveKitConfig();
+            
+            // JUSTIFICATIVA: Simplificação direta para utilizar o método centralizado da classe KitManager.
+            plugin.getKitManager().definirKitDoJogador(p);
+            
             p.sendMessage(plugin.getMsg("mensagens.kit-definido"));
             return true;
         }

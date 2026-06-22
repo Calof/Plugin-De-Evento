@@ -2,6 +2,7 @@
 /workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/EventoPvP.java
 /workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/util/EfeitosVisuais.java
 /workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/EventoComando.java
+/workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/manager/KitManager.java
 /workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/task/EventoTimerTask.java
 /workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/manager/EventoManager.java
 /workspaces/Plugin-De-Evento/src/main/java/com/seuprojeto/eventopvp/EventoListeners.java

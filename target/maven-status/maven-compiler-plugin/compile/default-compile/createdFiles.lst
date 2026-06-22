@@ -7,3 +7,4 @@ com/seuprojeto/eventopvp/util/EfeitosVisuais.class
 com/seuprojeto/eventopvp/EventoPvP.class
 com/seuprojeto/eventopvp/manager/EventoManager.class
 com/seuprojeto/eventopvp/EventoListeners.class
+com/seuprojeto/eventopvp/manager/KitManager.class
