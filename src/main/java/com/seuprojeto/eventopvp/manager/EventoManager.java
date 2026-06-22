@@ -1,9 +1,7 @@
 package com.seuprojeto.eventopvp.manager;
 
 import com.seuprojeto.eventopvp.EventoPvP;
-import com.seuprojeto.eventopvp.task.BatalhaTimerTask;
-import com.seuprojeto.eventopvp.task.FimEventoTask;
-import com.seuprojeto.eventopvp.task.PreparacaoTask;
+import com.seuprojeto.eventopvp.task.EventoTimerTask; // IMPORT CRUCIAL
 import com.seuprojeto.eventopvp.util.EfeitosVisuais;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
@@ -12,7 +10,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.scheduler.BukkitTask; // IMPORT CRUCIAL
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -70,15 +68,20 @@ public class EventoManager {
         cancelarTasks();
         pvpLiberado = false;
         int tempoPrep = plugin.getConfig().getInt("preparacao.tempo-preparacao", 5);
-        new PreparacaoTask(plugin, this, tempoPrep).runTaskTimer(plugin, 0L, 20L);
+        
+        // Retorna um BukkitTask, que é o tipo correto das variáveis lá de cima
+        this.taskCronometroBatalha = new EventoTimerTask(plugin, this, EventoTimerTask.FaseEvento.PREPARACAO, tempoPrep)
+                .runTaskTimer(plugin, 0L, 20L);
     }
 
     public void iniciarAgendadoresBatalha() {
-        if (taskCronometroBatalha != null) taskCronometroBatalha.cancel();
+        if (this.taskCronometroBatalha != null) this.taskCronometroBatalha.cancel();
         if (!plugin.getConfig().getBoolean("cronometro.batalha-com-tempo", true)) return;
 
         int duracaoMaxima = plugin.getConfig().getInt("cronometro.duracao-maxima-batalha", 600);
-        taskCronometroBatalha = new BatalhaTimerTask(plugin, this, duracaoMaxima).runTaskTimer(plugin, 0L, 20L);
+        
+        this.taskCronometroBatalha = new EventoTimerTask(plugin, this, EventoTimerTask.FaseEvento.BATALHA, duracaoMaxima)
+                .runTaskTimer(plugin, 0L, 20L);
     }
 
     public void processarPremioEmpate() {
@@ -106,9 +109,11 @@ public class EventoManager {
     }
 
     public void iniciarAgendadorFimDoEvento() {
-        if (taskCronometroFim != null) taskCronometroFim.cancel();
+        if (this.taskCronometroFim != null) this.taskCronometroFim.cancel();
         int tempoEspera = plugin.getConfig().getInt("tempo-espera-vencedor", 30);
-        taskCronometroFim = new FimEventoTask(plugin, this, tempoEspera).runTaskTimer(plugin, 0L, 20L);
+        
+        this.taskCronometroFim = new EventoTimerTask(plugin, this, EventoTimerTask.FaseEvento.FIM, tempoEspera)
+                .runTaskTimer(plugin, 0L, 20L);
     }
 
     public String determinarCorTempo(int original, int maximo, int avisoFinal) {
@@ -119,18 +124,14 @@ public class EventoManager {
     }
 
     public void cancelarTasks() {
-        if (taskCronometroBatalha != null) { taskCronmetoBatalhaCancel(); }
-        if (taskCronometroFim != null) { taskCronmetoFimCancel(); }
-    }
-
-    private void taskCronmetoBatalhaCancel() {
-        taskCronometroBatalha.cancel();
-        taskCronometroBatalha = null;
-    }
-
-    private void taskCronmetoFimCancel() {
-        taskCronometroFim.cancel();
-        taskCronometroFim = null;
+        if (this.taskCronometroBatalha != null) { 
+            this.taskCronometroBatalha.cancel();
+            this.taskCronometroBatalha = null;
+        }
+        if (this.taskCronometroFim != null) { 
+            this.taskCronometroFim.cancel();
+            this.taskCronometroFim = null;
+        }
     }
 
     public void verificarVencedor() {
@@ -150,7 +151,9 @@ public class EventoManager {
                         .replace("%premio%", String.valueOf(valorPremio));
                 if (!cmdPremio.isEmpty()) Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmdPremio);
                 
-                vencedor.setHealth(vencedor.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
+                if (vencedor.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+                    vencedor.setHealth(vencedor.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
+                }
                 vencedor.setFoodLevel(20);
                 vencedor.setFireTicks(0);
                 vencedor.getActivePotionEffects().forEach(effect -> vencedor.removePotionEffect(effect.getType()));
