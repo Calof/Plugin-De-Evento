@@ -13,6 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityResurrectEvent; // Importado
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.potion.PotionEffect;
@@ -24,6 +25,20 @@ public class EventoListeners implements Listener {
 
     public EventoListeners(EventoPvP plugin) {
         this.plugin = plugin;
+    }
+
+    // NOVO: Evento para garantir que o Totem funcione e não cause erros no evento de dano
+    @EventHandler
+    public void onTotemPop(EntityResurrectEvent event) {
+        if (!(event.getEntity() instanceof Player)) return;
+        Player player = (Player) event.getEntity();
+        EventoManager manager = plugin.getEventoManager();
+
+        // Se o jogador está no evento e o totem foi acionado, deixa o Minecraft processar o totem normalmente
+        if (manager.vivos.contains(player.getUniqueId())) {
+            // Se o evento for cancelado por algum outro motivo, forçamos a ativação se ele tiver o totem
+            event.setCancelled(false);
+        }
     }
 
     @EventHandler
@@ -40,6 +55,14 @@ public class EventoListeners implements Listener {
         }
 
         if (vitima.getHealth() - event.getFinalDamage() <= 0) {
+            
+            // CORREÇÃO: Se o jogador estiver segurando um Totem da Imortalidade, NÃO elimina ele.
+            // O EntityResurrectEvent vai cuidar de dar os efeitos do totem e revivê-lo.
+            if (vitima.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING || 
+                vitima.getInventory().getItemInOffHand().getType() == Material.TOTEM_OF_UNDYING) {
+                return; // Ignora o resto do código de morte e deixa o Minecraft agir
+            }
+
             event.setCancelled(true);
 
             Player killer = null;
