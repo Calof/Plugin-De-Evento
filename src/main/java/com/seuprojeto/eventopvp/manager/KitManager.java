@@ -23,7 +23,6 @@ public class KitManager {
         carregarConfig();
     }
 
-    // Isola a criação/carregamento do kit.yml aqui, tirando o peso do ConfigManager
     public void carregarConfig() {
         kitFile = new File(plugin.getDataFolder(), "kit.yml");
         if (!kitFile.exists()) {
@@ -51,15 +50,19 @@ public class KitManager {
         }
     }
 
-    // Centraliza a lógica de DEFINIR o kit
+    // Centraliza a lógica de DEFINIR o kit sem duplicar itens
     public void definirKitDoJogador(Player p) {
-        kitConfig.set("inventario", Arrays.asList(p.getInventory().getContents()));
+        // getStorageContents() pega APENAS os 36 slots principais (sem armadura e sem off-hand)
+        kitConfig.set("inventario", Arrays.asList(p.getInventory().getStorageContents()));
         kitConfig.set("armadura", Arrays.asList(p.getInventory().getArmorContents()));
+        // Salva separadamente o item da segunda mão (off-hand)
+        kitConfig.set("offhand", p.getInventory().getItemInOffHand());
         salvarConfig();
     }
 
     // Centraliza a lógica de APLICAR o kit de forma segura
     public void aplicarKitNoJogador(Player p) {
+        // Carrega o inventário principal
         List<?> itensRaw = kitConfig.getList("inventario");
         List<ItemStack> itensKit = new ArrayList<>();
         if (itensRaw != null) {
@@ -68,6 +71,7 @@ public class KitManager {
             }
         }
 
+        // Carrega a armadura
         List<?> armaduraRaw = kitConfig.getList("armadura");
         List<ItemStack> armaduraKit = new ArrayList<>();
         if (armaduraRaw != null) {
@@ -76,14 +80,23 @@ public class KitManager {
             }
         }
 
-        // Aplica os itens limpando e atualizando com segurança
+        // Carrega a segunda mão
+        ItemStack offHandItem = kitConfig.getItemStack("offhand");
+
+        // Limpa e aplica com segurança
         p.getInventory().clear();
+
         if (!itensKit.isEmpty()) {
-            p.getInventory().setContents(itensKit.toArray(new ItemStack[0]));
+            // setStorageContents define apenas o inventário principal, sem mexer no resto
+            p.getInventory().setStorageContents(itensKit.toArray(new ItemStack[0]));
         }
         if (!armaduraKit.isEmpty()) {
             p.getInventory().setArmorContents(armaduraKit.toArray(new ItemStack[0]));
         }
+        if (offHandItem != null) {
+            p.getInventory().setItemInOffHand(offHandItem);
+        }
+
         p.updateInventory();
     }
 }
